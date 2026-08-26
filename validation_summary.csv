@@ -1,0 +1,11 @@
+atoms,candidate_points,kind,lower_bound,name,num_cliques,objective,passed,primal_objective,status,success
+,,sdp,,diag_trace,,,True,2.995403703876622,approximate,
+,,chordal,,chordal_structure,3,,True,,,
+,,sos,,sos_decompose,,,True,,,True
+,,sos_lb,3.0,sos_lower_bound,,,True,,,
+,,sos_relax,-0.0009765625,poly_multiplier_relax,,,True,,,
+[{x1: 2}],,moment,,moment_atom_extraction_rank1,,,True,,,
+"[{x1: 0}, {x1: 2}]",,moment,,moment_atom_extraction_multi,,,True,,,
+,[{x1: 2}],moments_dual,,solve_moment_dual,,,True,,,
+,,lp,,lp_optimization,,0.0,True,,,
+,,qp,,qp_optimization,,-5.0,True,,,

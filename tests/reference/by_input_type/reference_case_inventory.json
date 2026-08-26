@@ -1,0 +1,2621 @@
+[
+  {
+    "case": 1,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x over the closed unit disk; optimum -1 at (-1,0)"
+  },
+  {
+    "case": 2,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x over the open unit disk; infimum -1 is unattained"
+  },
+  {
+    "case": 3,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x subject to x^2+y^2<0; infeasible"
+  },
+  {
+    "case": 4,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x subject to x^2+y^2<=0; unique feasible point (0,0)"
+  },
+  {
+    "case": 5,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x over a union of the origin and x+y=1; unbounded below"
+  },
+  {
+    "case": 6,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x^2+2y^2+3z^2 under two polynomial inequalities; optimum 0 at origin"
+  },
+  {
+    "case": 7,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize exp(2x+1)+2 over an open radius-sqrt(2) disk; boundary infimum"
+  },
+  {
+    "case": 8,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize log(x^2+y^2) on R^2; infimum -infinity at the singular origin"
+  },
+  {
+    "case": 9,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize log(x) over its real domain; infimum -infinity as x->0+"
+  },
+  {
+    "case": 10,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize sqrt(x-y+1) subject to x+y>=2; optimum 0 at (1/2,3/2)"
+  },
+  {
+    "case": 11,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize sqrt(x-y+1)+sqrt(x+y+1) subject to x+y>=2; optimum sqrt(3)"
+  },
+  {
+    "case": 12,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same two-square-root objective with strict x+y>2; boundary infimum sqrt(3)"
+  },
+  {
+    "case": 13,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize 2x+3 over x^4+y^4<7; algebraic boundary infimum"
+  },
+  {
+    "case": 14,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize 2x+3 over x^4+y^4<=7; attained algebraic boundary minimum"
+  },
+  {
+    "case": 15,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 13,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize 2x+3 over x^4+y^4<7; algebraic boundary infimum"
+  },
+  {
+    "case": 16,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 14,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize 2x+3 over x^4+y^4<=7; attained algebraic boundary minimum"
+  },
+  {
+    "case": 17,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize 3x^2+4xy+5y^3 under x^3+y^3<=7xy+1; unbounded below"
+  },
+  {
+    "case": 18,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same cubic objective under x^2+y^2<=xy+1; exact algebraic minimum"
+  },
+  {
+    "case": 19,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same cubic objective under strict x^2+y^2<xy+1; boundary-infimum variant"
+  },
+  {
+    "case": 20,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 19,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "same cubic objective under strict x^2+y^2<xy+1; boundary-infimum variant"
+  },
+  {
+    "case": 21,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x subject to xy=1; unbounded below with y->0"
+  },
+  {
+    "case": 22,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x subject to xy=1 and x,y>=0; unattained infimum 0"
+  },
+  {
+    "case": 23,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize y subject to xy=1 and x,y>=0; unattained infimum 0"
+  },
+  {
+    "case": 24,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x+y subject to xy=1 and x,y>=0; optimum 2 at (1,1)"
+  },
+  {
+    "case": 25,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x^4 on 3<=x<=4; optimum 81 at x=3"
+  },
+  {
+    "case": 26,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same bounded quartic with an inexact additive constant; numerical optimum 82"
+  },
+  {
+    "case": 27,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize 2^(x^2-2xy+z-1) under two polynomial inequalities; unattained infimum 0"
+  },
+  {
+    "case": 28,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same exponential-polynomial objective with two inequalities and x+y+z=1; exact algebraic optimum"
+  },
+  {
+    "case": 29,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "strict-inequality value-only variant of the preceding exponential-polynomial problem"
+  },
+  {
+    "case": 30,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x under coupled cubic polynomial inequalities; optimum (-1-sqrt(5))/2"
+  },
+  {
+    "case": 31,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "strict version of the coupled cubic inequalities; same unattained x-infimum"
+  },
+  {
+    "case": 32,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 31,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "strict version of the coupled cubic inequalities; same unattained x-infimum"
+  },
+  {
+    "case": 33,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x under x^3-21x+11>=0 plus coupled cubic y-constraint; algebraic root optimum"
+  },
+  {
+    "case": 34,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "strict version of the preceding cubic system; unattained algebraic infimum"
+  },
+  {
+    "case": 35,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 34,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "strict version of the preceding cubic system; unattained algebraic infimum"
+  },
+  {
+    "case": 36,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize (x^2+y^2-1)^2 subject to x+y<=1; minimum 0 on feasible unit circle"
+  },
+  {
+    "case": 37,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize -x-y over open quartic ellipse x^4/4+y^4/9<1; algebraic boundary infimum"
+  },
+  {
+    "case": 38,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "closed quartic-ellipse version of the preceding problem; attained algebraic minimum"
+  },
+  {
+    "case": 39,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 38,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "closed quartic-ellipse version of the preceding problem; attained algebraic minimum"
+  },
+  {
+    "case": 40,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x-1/4 over open unit disk; infimum -5/4"
+  },
+  {
+    "case": 41,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x-1/4 over closed unit disk; minimum -5/4 at (-1,0)"
+  },
+  {
+    "case": 42,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x-1/4 on unit circle; minimum -5/4 at (-1,0)"
+  },
+  {
+    "case": 43,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 40,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize x-1/4 over open unit disk; infimum -5/4"
+  },
+  {
+    "case": 44,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 42,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize x-1/4 on unit circle; minimum -5/4 at (-1,0)"
+  },
+  {
+    "case": 45,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize (x-1/4)^2 over open unit disk; minimum 0 attained in the interior"
+  },
+  {
+    "case": 46,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize (x-1/4)^2 on unit circle; minimum 0 at x=1/4"
+  },
+  {
+    "case": 47,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 45,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize (x-1/4)^2 over open unit disk; minimum 0 attained in the interior"
+  },
+  {
+    "case": 48,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 46,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize (x-1/4)^2 on unit circle; minimum 0 at x=1/4"
+  },
+  {
+    "case": 49,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x subject to x<0; unbounded below"
+  },
+  {
+    "case": 50,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 49,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize x subject to x<0; unbounded below"
+  },
+  {
+    "case": 51,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize -(x^2+y^2) under a strict shifted quartic inequality; exact algebraic boundary infimum"
+  },
+  {
+    "case": 52,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "closed shifted-quartic version of the preceding problem; attained algebraic minimum"
+  },
+  {
+    "case": 53,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 51,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize -(x^2+y^2) under a strict shifted quartic inequality; exact algebraic boundary infimum"
+  },
+  {
+    "case": 54,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize -(x^2+y^2) on 1<x^4+y^4<=2; minimum -2 at a corner of outer level set"
+  },
+  {
+    "case": 55,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x^2+y^2 on 1<=x^4+y^4<=2; minimum 1"
+  },
+  {
+    "case": 56,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 55,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize x^2+y^2 on 1<=x^4+y^4<=2; minimum 1"
+  },
+  {
+    "case": 57,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x^2+2x+Abs(x^2-2x-3) with an unused free variable; minimum -1"
+  },
+  {
+    "case": 58,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize sqrt(sqrt(1+x)+y) subject to x^2+y^2>=1; minimum 0 at (-1,0)"
+  },
+  {
+    "case": 59,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 58,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize sqrt(sqrt(1+x)+y) subject to x^2+y^2>=1; minimum 0 at (-1,0)"
+  },
+  {
+    "case": 60,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_reference_linear_program_seven_variables",
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "seven-variable bounded linear program; exact optimum 5/4"
+  },
+  {
+    "case": 61,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_reference_linear_program_seven_variables",
+    "variant_of": 60,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "seven-variable bounded linear program; exact optimum 5/4"
+  },
+  {
+    "case": 62,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": 6,
+    "variant_kind": "semantic duplicate/variant",
+    "description": "minimize x^2+2y^2+3z^2 under two polynomial inequalities; optimum 0 at origin"
+  },
+  {
+    "case": 63,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize negative reciprocal distance with y=1/1000 and 1/2<=x<=3/2; minimum -1000"
+  },
+  {
+    "case": 64,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_equality_plus_strict_ball_quadratic",
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x^2+3y^2 with x+y=1 and strict quadratic side constraint; optimum 3/4"
+  },
+  {
+    "case": 65,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "quadratic objective with nonlinear inequality and linear equality; exact algebraic optimum"
+  },
+  {
+    "case": 66,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize squared distance between two points in unit disks via minimization; optimum -4"
+  },
+  {
+    "case": 67,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize (y-x^2)(y-2x^2) on [-1,1]^2; optimum -1/8"
+  },
+  {
+    "case": 68,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "disjunctive constraint with impossible branch or x=1; minimum 1"
+  },
+  {
+    "case": 69,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "unconstrained quartic polynomial x^4-xy+y^2+x^2y^2; exact algebraic global minimum"
+  },
+  {
+    "case": 70,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 70,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize cubic x^3-xy+y^3 over open unit disk; exact algebraic infimum"
+  },
+  {
+    "case": 71,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x-y on x^4+y^4=1; exact algebraic minimum"
+  },
+  {
+    "case": 72,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x^2+y^2 subject to sqrt(x)+sqrt(y)=sqrt(2); optimum 1/2"
+  },
+  {
+    "case": 73,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x+y^2 subject to x^4+y^4=1 and y>=x^2; exact algebraic minimum"
+  },
+  {
+    "case": 74,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize E*x^2-pi*y over x^2+sqrt(2)y^2<=pi; exact symbolic minimum"
+  },
+  {
+    "case": 75,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_quartic_ball_exact_minimum",
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x^2-y^3 over x^4+y^4<=3; optimum -3^(3/4)"
+  },
+  {
+    "case": 76,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "nested Erf/ArcTan/exp/LambertW univariate global minimum"
+  },
+  {
+    "case": 77,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize the negative real branch of LambertW; unbounded below near zero"
+  },
+  {
+    "case": 78,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_quartic_ball_exact_minimum",
+    "variant_of": 75,
+    "variant_kind": "semantic duplicate/variant",
+    "description": "minimize x^2-y^3 over x^4+y^4<=3; optimum -3^(3/4)"
+  },
+  {
+    "case": 79,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "high-precision three-variable polynomial equality problem with algebraic minimum"
+  },
+  {
+    "case": 80,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 1,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x over the closed unit disk; optimum -1 at (-1,0)"
+  },
+  {
+    "case": 81,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 2,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x over the open unit disk; infimum -1 is unattained"
+  },
+  {
+    "case": 82,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 3,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x subject to x^2+y^2<0; infeasible"
+  },
+  {
+    "case": 83,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 4,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x subject to x^2+y^2<=0; unique feasible point (0,0)"
+  },
+  {
+    "case": 84,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 5,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x over a union of the origin and x+y=1; unbounded below"
+  },
+  {
+    "case": 85,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 6,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x^2+2y^2+3z^2 under two polynomial inequalities; optimum 0 at origin"
+  },
+  {
+    "case": 86,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 6,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x^2+2y^2+3z^2 under two polynomial inequalities; optimum 0 at origin"
+  },
+  {
+    "case": 87,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 7,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize exp(2x+1)+2 over an open radius-sqrt(2) disk; boundary infimum"
+  },
+  {
+    "case": 88,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 8,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize log(x^2+y^2) on R^2; infimum -infinity at the singular origin"
+  },
+  {
+    "case": 89,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 9,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize log(x) over its real domain; infimum -infinity as x->0+"
+  },
+  {
+    "case": 90,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 10,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize sqrt(x-y+1) subject to x+y>=2; optimum 0 at (1/2,3/2)"
+  },
+  {
+    "case": 91,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 11,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize sqrt(x-y+1)+sqrt(x+y+1) subject to x+y>=2; optimum sqrt(3)"
+  },
+  {
+    "case": 92,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 12,
+    "variant_kind": "precision/result-format variant",
+    "description": "same two-square-root objective with strict x+y>2; boundary infimum sqrt(3)"
+  },
+  {
+    "case": 93,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 13,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize 2x+3 over x^4+y^4<7; algebraic boundary infimum"
+  },
+  {
+    "case": 94,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 14,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize 2x+3 over x^4+y^4<=7; attained algebraic boundary minimum"
+  },
+  {
+    "case": 95,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 15,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize 2x+3 over x^4+y^4<7; algebraic boundary infimum"
+  },
+  {
+    "case": 96,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 16,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize 2x+3 over x^4+y^4<=7; attained algebraic boundary minimum"
+  },
+  {
+    "case": 97,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 17,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize 3x^2+4xy+5y^3 under x^3+y^3<=7xy+1; unbounded below"
+  },
+  {
+    "case": 98,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 18,
+    "variant_kind": "precision/result-format variant",
+    "description": "same cubic objective under x^2+y^2<=xy+1; exact algebraic minimum"
+  },
+  {
+    "case": 99,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 19,
+    "variant_kind": "precision/result-format variant",
+    "description": "same cubic objective under strict x^2+y^2<xy+1; boundary-infimum variant"
+  },
+  {
+    "case": 100,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 20,
+    "variant_kind": "precision/result-format variant",
+    "description": "same cubic objective under strict x^2+y^2<xy+1; boundary-infimum variant"
+  },
+  {
+    "case": 101,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 21,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x subject to xy=1; unbounded below with y->0"
+  },
+  {
+    "case": 102,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 22,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x subject to xy=1 and x,y>=0; unattained infimum 0"
+  },
+  {
+    "case": 103,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 23,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize y subject to xy=1 and x,y>=0; unattained infimum 0"
+  },
+  {
+    "case": 104,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 24,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x+y subject to xy=1 and x,y>=0; optimum 2 at (1,1)"
+  },
+  {
+    "case": 105,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 25,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x^4 on 3<=x<=4; optimum 81 at x=3"
+  },
+  {
+    "case": 106,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 26,
+    "variant_kind": "precision/result-format variant",
+    "description": "same bounded quartic with an inexact additive constant; numerical optimum 82"
+  },
+  {
+    "case": 107,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 27,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize 2^(x^2-2xy+z-1) under two polynomial inequalities; unattained infimum 0"
+  },
+  {
+    "case": 108,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 29,
+    "variant_kind": "precision/result-format variant",
+    "description": "strict-inequality value-only variant of the preceding exponential-polynomial problem"
+  },
+  {
+    "case": 109,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 30,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x under coupled cubic polynomial inequalities; optimum (-1-sqrt(5))/2"
+  },
+  {
+    "case": 110,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 31,
+    "variant_kind": "precision/result-format variant",
+    "description": "strict version of the coupled cubic inequalities; same unattained x-infimum"
+  },
+  {
+    "case": 111,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 32,
+    "variant_kind": "precision/result-format variant",
+    "description": "strict version of the coupled cubic inequalities; same unattained x-infimum"
+  },
+  {
+    "case": 112,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 33,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x under x^3-21x+11>=0 plus coupled cubic y-constraint; algebraic root optimum"
+  },
+  {
+    "case": 113,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 34,
+    "variant_kind": "precision/result-format variant",
+    "description": "strict version of the preceding cubic system; unattained algebraic infimum"
+  },
+  {
+    "case": 114,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 35,
+    "variant_kind": "precision/result-format variant",
+    "description": "strict version of the preceding cubic system; unattained algebraic infimum"
+  },
+  {
+    "case": 115,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 36,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize (x^2+y^2-1)^2 subject to x+y<=1; minimum 0 on feasible unit circle"
+  },
+  {
+    "case": 116,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 37,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize -x-y over open quartic ellipse x^4/4+y^4/9<1; algebraic boundary infimum"
+  },
+  {
+    "case": 117,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 38,
+    "variant_kind": "precision/result-format variant",
+    "description": "closed quartic-ellipse version of the preceding problem; attained algebraic minimum"
+  },
+  {
+    "case": 118,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 39,
+    "variant_kind": "precision/result-format variant",
+    "description": "closed quartic-ellipse version of the preceding problem; attained algebraic minimum"
+  },
+  {
+    "case": 119,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 40,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x-1/4 over open unit disk; infimum -5/4"
+  },
+  {
+    "case": 120,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 41,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x-1/4 over closed unit disk; minimum -5/4 at (-1,0)"
+  },
+  {
+    "case": 121,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 42,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x-1/4 on unit circle; minimum -5/4 at (-1,0)"
+  },
+  {
+    "case": 122,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 43,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x-1/4 over open unit disk; infimum -5/4"
+  },
+  {
+    "case": 123,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 44,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x-1/4 on unit circle; minimum -5/4 at (-1,0)"
+  },
+  {
+    "case": 124,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 45,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize (x-1/4)^2 over open unit disk; minimum 0 attained in the interior"
+  },
+  {
+    "case": 125,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 46,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize (x-1/4)^2 on unit circle; minimum 0 at x=1/4"
+  },
+  {
+    "case": 126,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 47,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize (x-1/4)^2 over open unit disk; minimum 0 attained in the interior"
+  },
+  {
+    "case": 127,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 48,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize (x-1/4)^2 on unit circle; minimum 0 at x=1/4"
+  },
+  {
+    "case": 128,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 49,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x subject to x<0; unbounded below"
+  },
+  {
+    "case": 129,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 50,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x subject to x<0; unbounded below"
+  },
+  {
+    "case": 130,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 51,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize -(x^2+y^2) under a strict shifted quartic inequality; exact algebraic boundary infimum"
+  },
+  {
+    "case": 131,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 52,
+    "variant_kind": "precision/result-format variant",
+    "description": "closed shifted-quartic version of the preceding problem; attained algebraic minimum"
+  },
+  {
+    "case": 132,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 53,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize -(x^2+y^2) under a strict shifted quartic inequality; exact algebraic boundary infimum"
+  },
+  {
+    "case": 133,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 54,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize -(x^2+y^2) on 1<x^4+y^4<=2; minimum -2 at a corner of outer level set"
+  },
+  {
+    "case": 134,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 55,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x^2+y^2 on 1<=x^4+y^4<=2; minimum 1"
+  },
+  {
+    "case": 135,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 56,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x^2+y^2 on 1<=x^4+y^4<=2; minimum 1"
+  },
+  {
+    "case": 136,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x^3-xy+y^3 over closed unit disk; exact algebraic minimum"
+  },
+  {
+    "case": 137,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 70,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize cubic x^3-xy+y^3 over open unit disk; exact algebraic infimum"
+  },
+  {
+    "case": 138,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 71,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x-y on x^4+y^4=1; exact algebraic minimum"
+  },
+  {
+    "case": 139,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 72,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x^2+y^2 subject to sqrt(x)+sqrt(y)=sqrt(2); optimum 1/2"
+  },
+  {
+    "case": 140,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 73,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x+y^2 subject to x^4+y^4=1 and y>=x^2; exact algebraic minimum"
+  },
+  {
+    "case": 141,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize spacing between first two roots of a parameterized cubic on its discriminant curve; infimum 0"
+  },
+  {
+    "case": 142,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same root-spacing objective in negative-discriminant region; infimum 0"
+  },
+  {
+    "case": 143,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same root-spacing objective in positive-discriminant region; attained zero spacing case"
+  },
+  {
+    "case": 144,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 141,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize spacing between first two roots of a parameterized cubic on its discriminant curve; infimum 0"
+  },
+  {
+    "case": 145,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 143,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "same root-spacing objective in positive-discriminant region; attained zero spacing case"
+  },
+  {
+    "case": 146,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize spacing between third and first roots of a cubic on the discriminant curve; algebraic minimum"
+  },
+  {
+    "case": 147,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 146,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize spacing between third and first roots of a cubic on the discriminant curve; algebraic minimum"
+  },
+  {
+    "case": 148,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "unconstrained parameterized cubic root-span minimization; minimum 0"
+  },
+  {
+    "case": 149,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 148,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "unconstrained parameterized cubic root-span minimization; minimum 0"
+  },
+  {
+    "case": 150,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 141,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize spacing between first two roots of a parameterized cubic on its discriminant curve; infimum 0"
+  },
+  {
+    "case": 151,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 142,
+    "variant_kind": "precision/result-format variant",
+    "description": "same root-spacing objective in negative-discriminant region; infimum 0"
+  },
+  {
+    "case": 152,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 143,
+    "variant_kind": "precision/result-format variant",
+    "description": "same root-spacing objective in positive-discriminant region; attained zero spacing case"
+  },
+  {
+    "case": 153,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 144,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize spacing between first two roots of a parameterized cubic on its discriminant curve; infimum 0"
+  },
+  {
+    "case": 154,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 145,
+    "variant_kind": "precision/result-format variant",
+    "description": "same root-spacing objective in positive-discriminant region; attained zero spacing case"
+  },
+  {
+    "case": 155,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 146,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize spacing between third and first roots of a cubic on the discriminant curve; algebraic minimum"
+  },
+  {
+    "case": 156,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 147,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize spacing between third and first roots of a cubic on the discriminant curve; algebraic minimum"
+  },
+  {
+    "case": 157,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 148,
+    "variant_kind": "precision/result-format variant",
+    "description": "unconstrained parameterized cubic root-span minimization; minimum 0"
+  },
+  {
+    "case": 158,
+    "status": "future",
+    "family": "parameter-dependent algebraic-root branch optimization",
+    "covered_by": null,
+    "variant_of": 149,
+    "variant_kind": "precision/result-format variant",
+    "description": "unconstrained parameterized cubic root-span minimization; minimum 0"
+  },
+  {
+    "case": 159,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 58,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize sqrt(sqrt(1+x)+y) subject to x^2+y^2>=1; minimum 0 at (-1,0)"
+  },
+  {
+    "case": 160,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 58,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize sqrt(sqrt(1+x)+y) subject to x^2+y^2>=1; minimum 0 at (-1,0)"
+  },
+  {
+    "case": 161,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 59,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize sqrt(sqrt(1+x)+y) subject to x^2+y^2>=1; minimum 0 at (-1,0)"
+  },
+  {
+    "case": 162,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_reference_linear_program_seven_variables",
+    "variant_of": 60,
+    "variant_kind": "precision/result-format variant",
+    "description": "seven-variable bounded linear program; exact optimum 5/4"
+  },
+  {
+    "case": 163,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_reference_linear_program_seven_variables",
+    "variant_of": 61,
+    "variant_kind": "precision/result-format variant",
+    "description": "seven-variable bounded linear program; exact optimum 5/4"
+  },
+  {
+    "case": 164,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 63,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize negative reciprocal distance with y=1/1000 and 1/2<=x<=3/2; minimum -1000"
+  },
+  {
+    "case": 165,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_equality_plus_strict_ball_quadratic",
+    "variant_of": 64,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x^2+3y^2 with x+y=1 and strict quadratic side constraint; optimum 3/4"
+  },
+  {
+    "case": 166,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 6,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x^2+2y^2+3z^2 under two polynomial inequalities; optimum 0 at origin"
+  },
+  {
+    "case": 167,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 6,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x^2+2y^2+3z^2 under two polynomial inequalities; optimum 0 at origin"
+  },
+  {
+    "case": 168,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 65,
+    "variant_kind": "precision/result-format variant",
+    "description": "quadratic objective with nonlinear inequality and linear equality; exact algebraic optimum"
+  },
+  {
+    "case": 169,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_quartic_ball_exact_minimum",
+    "variant_of": 75,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize x^2-y^3 over x^4+y^4<=3; optimum -3^(3/4)"
+  },
+  {
+    "case": 170,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 67,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize (y-x^2)(y-2x^2) on [-1,1]^2; optimum -1/8"
+  },
+  {
+    "case": 171,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 68,
+    "variant_kind": "precision/result-format variant",
+    "description": "disjunctive constraint with impossible branch or x=1; minimum 1"
+  },
+  {
+    "case": 172,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 69,
+    "variant_kind": "precision/result-format variant",
+    "description": "unconstrained quartic polynomial x^4-xy+y^2+x^2y^2; exact algebraic global minimum"
+  },
+  {
+    "case": 173,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 69,
+    "variant_kind": "precision/result-format variant",
+    "description": "unconstrained quartic polynomial x^4-xy+y^2+x^2y^2; exact algebraic global minimum"
+  },
+  {
+    "case": 174,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x+y+z over unit ball; optimum -sqrt(3) at equal coordinates"
+  },
+  {
+    "case": 175,
+    "status": "future",
+    "family": "source-specific arbitrary-precision result semantics",
+    "covered_by": null,
+    "variant_of": 74,
+    "variant_kind": "precision/result-format variant",
+    "description": "minimize E*x^2-pi*y over x^2+sqrt(2)y^2<=pi; exact symbolic minimum"
+  },
+  {
+    "case": 176,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "real-domain/disjunction semantics for unbounded linear objective"
+  },
+  {
+    "case": 177,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "integer x,y minimization of x+y inside radius-10 disk; optimum -14"
+  },
+  {
+    "case": 178,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "integer linear equality x-y=1 with unbounded objective x+y"
+  },
+  {
+    "case": 179,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "mixed integer/real-domain rejection case"
+  },
+  {
+    "case": 180,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "integer factorization xy=7 with x>=0; minimum x+y=8"
+  },
+  {
+    "case": 181,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "union of an integer factorization branch and open unit disk; continuous branch gives -sqrt(2)"
+  },
+  {
+    "case": 182,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "integer xy=1/100 with x>=0; infeasible"
+  },
+  {
+    "case": 183,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "union of preceding infeasible integer branch with x^4=4; minimum -sqrt(2)"
+  },
+  {
+    "case": 184,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize x+sin(x) on -4<x<=4; endpoint maximum"
+  },
+  {
+    "case": 185,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same objective on -4<x<4; unattained endpoint supremum"
+  },
+  {
+    "case": 186,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize sin(x) on -4<x<=4; maximum 1 at pi/2"
+  },
+  {
+    "case": 187,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x+sin(x) on [-4,4]; endpoint minimum"
+  },
+  {
+    "case": 188,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize 1/x on its real domain; -infinity near zero from the left"
+  },
+  {
+    "case": 189,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize 1/x; +infinity near zero from the right"
+  },
+  {
+    "case": 190,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize 1/x^2; infimum 0 at infinity"
+  },
+  {
+    "case": 191,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize 1/x^2; +infinity near zero"
+  },
+  {
+    "case": 192,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize 2sin(x)+3cos(x) on [0,100]; exact trigonometric maximum"
+  },
+  {
+    "case": 193,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same trigonometric objective on [0,10]"
+  },
+  {
+    "case": 194,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize cos(x) on [0,1000]; maximum 1"
+  },
+  {
+    "case": 195,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize x+sin(x) over closed disk x^2+y^2<=7"
+  },
+  {
+    "case": 196,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize sin(x) over closed disk x^2+y^2<=7"
+  },
+  {
+    "case": 197,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "global maximize sin(x); maximum 1 at one periodic representative"
+  },
+  {
+    "case": 198,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "open-disk version of x+sin(x); boundary supremum"
+  },
+  {
+    "case": 199,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize sin(x) subject to cos(x)>1/2; boundary infimum -sqrt(3)/2"
+  },
+  {
+    "case": 200,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize x over open radius-sqrt(7) disk; boundary supremum"
+  },
+  {
+    "case": 201,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize x^2 over open radius-sqrt(7) disk; boundary supremum 7"
+  },
+  {
+    "case": 202,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize tan(x) subject to sin(x)+cos(x)<1; unbounded at tangent poles"
+  },
+  {
+    "case": 203,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize sin(x)+cos(x) subject to tan(x)>1; boundary supremum sqrt(2)"
+  },
+  {
+    "case": 204,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x-exp(x) for x>=0; unbounded below"
+  },
+  {
+    "case": 205,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize exp(x)-2x for x>=0; optimum 2-2log(2) at log(2)"
+  },
+  {
+    "case": 206,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize log(x)-x for x>0; unbounded below near zero/infinity"
+  },
+  {
+    "case": 207,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize -x+log(x) for x>0; maximum -1 at x=1"
+  },
+  {
+    "case": 208,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize log(x)-log(x^2+1) for x>0; maximum -log(2) at x=1"
+  },
+  {
+    "case": 209,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize log(x)-log(x^2) for x>0; unbounded below"
+  },
+  {
+    "case": 210,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize log(x)-log(x^2+1) for x>=0; unbounded below near zero"
+  },
+  {
+    "case": 211,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x^x for x>0; optimum exp(-1/e) at x=1/e"
+  },
+  {
+    "case": 212,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x+y on unit circle with box bounds; optimum -sqrt(2)"
+  },
+  {
+    "case": 213,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded three-variable polynomial equalities; exact algebraic maximum"
+  },
+  {
+    "case": 214,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded cubic equality problem; exact radical maximum"
+  },
+  {
+    "case": 215,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize x^3-yz with only y,z bounded; unbounded in x"
+  },
+  {
+    "case": 216,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "high-degree four-variable polynomial objective with only y,z bounded; unbounded below"
+  },
+  {
+    "case": 217,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded polynomial maximization with quartic z term; exact algebraic maximum"
+  },
+  {
+    "case": 218,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded polynomial maximization with cubic y contribution; exact algebraic maximum"
+  },
+  {
+    "case": 219,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded polynomial maximization with xyz coupling; exact algebraic maximum"
+  },
+  {
+    "case": 220,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded polynomial maximization with xy-z^3=2 equality"
+  },
+  {
+    "case": 221,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded polynomial system with three equalities; infeasible"
+  },
+  {
+    "case": 222,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded polynomial system with three equalities; exact algebraic minimum"
+  },
+  {
+    "case": 223,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize sin(x) subject to cos(2xy)=1/2 and box bounds"
+  },
+  {
+    "case": 224,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize x-y under the same trigonometric equality and box bounds"
+  },
+  {
+    "case": 225,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize x-2y under the same trigonometric equality and box bounds"
+  },
+  {
+    "case": 226,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded polynomial equality minimization in x,y,z with exact algebraic optimum"
+  },
+  {
+    "case": 227,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded four-variable polynomial equality minimization with exact algebraic optimum"
+  },
+  {
+    "case": 228,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize x subject to x^2-sin(y)^2=1 and box bounds; optimum sqrt(2)"
+  },
+  {
+    "case": 229,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize cos(x) under x^2-sin(y)^2=1 and box bounds; symmetric maxima"
+  },
+  {
+    "case": 230,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize x+exp(x-y) under affine equality and box bounds"
+  },
+  {
+    "case": 231,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "log-domain bounded affine-equality problem; infeasible"
+  },
+  {
+    "case": 232,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "log-domain affine-equality maximization with singular unbounded behavior"
+  },
+  {
+    "case": 233,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded affine-equality log maximization; exact endpoint optimum"
+  },
+  {
+    "case": 234,
+    "status": "future",
+    "family": "exact semialgebraic/global polynomial optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x+y on unit circle with closed box bounds; optimum -sqrt(2)"
+  },
+  {
+    "case": 235,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_promoted_semialgebraic_reference_cases",
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize a*x^2 over variables a,x with a>0; minimum 0"
+  },
+  {
+    "case": 236,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded four-variable integer polynomial minimization"
+  },
+  {
+    "case": 237,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded four-variable integer trigonometric minimization"
+  },
+  {
+    "case": 238,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded three-variable integer problem with Abs(sin(xyz)) constraint"
+  },
+  {
+    "case": 239,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "integer disjunction combining bounded trigonometric branch and quadratic ball"
+  },
+  {
+    "case": 240,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "integer disjunction combining tangent branch and quadratic ball"
+  },
+  {
+    "case": 241,
+    "status": "future",
+    "family": "integer-domain optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded/unbounded integer disjunction with tangent branch"
+  },
+  {
+    "case": 242,
+    "status": "future",
+    "family": "parametric optimization / explicit optimization-variable semantics",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "parametric minimize x subject to x^2+y^2=1, optimizing only x"
+  },
+  {
+    "case": 243,
+    "status": "future",
+    "family": "parametric optimization / explicit optimization-variable semantics",
+    "covered_by": null,
+    "variant_of": 242,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "parametric minimize x subject to x^2+y^2=1, optimizing only x"
+  },
+  {
+    "case": 244,
+    "status": "future",
+    "family": "parametric optimization / explicit optimization-variable semantics",
+    "covered_by": null,
+    "variant_of": 242,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "parametric minimize x subject to x^2+y^2=1, optimizing only x"
+  },
+  {
+    "case": 245,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_wrapper_reference_unit_circle_cases_245_to_249",
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x on unit circle over both x,y; optimum -1"
+  },
+  {
+    "case": 246,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_wrapper_reference_unit_circle_cases_245_to_249",
+    "variant_of": 245,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize x on unit circle over both x,y; optimum -1"
+  },
+  {
+    "case": 247,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_wrapper_reference_unit_circle_cases_245_to_249",
+    "variant_of": 245,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize x on unit circle over both x,y; optimum -1"
+  },
+  {
+    "case": 248,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_wrapper_reference_unit_circle_cases_245_to_249",
+    "variant_of": 245,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize x on unit circle over both x,y; optimum -1"
+  },
+  {
+    "case": 249,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_wrapper_reference_unit_circle_cases_245_to_249",
+    "variant_of": 245,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize x on unit circle over both x,y; optimum -1"
+  },
+  {
+    "case": 250,
+    "status": "future",
+    "family": "global optimization capability not yet in the fast supported reference set",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize x-y^3 on unit circle; exact algebraic minimum"
+  },
+  {
+    "case": 251,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 250,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize x-y^3 on unit circle; exact algebraic minimum"
+  },
+  {
+    "case": 252,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 250,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "minimize x-y^3 on unit circle; exact algebraic minimum"
+  },
+  {
+    "case": 253,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "argument-only form of infeasible x-y^3 problem with x^2+y^2=-1"
+  },
+  {
+    "case": 254,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "argument-only x-y^3 minimization on open unit disk; boundary optimum representation"
+  },
+  {
+    "case": 255,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 254,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "argument-only x-y^3 minimization on open unit disk; boundary optimum representation"
+  },
+  {
+    "case": 256,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "value-only unbounded x-y^3 over R^2"
+  },
+  {
+    "case": 257,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 256,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "value-only unbounded x-y^3 over R^2"
+  },
+  {
+    "case": 258,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 256,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "value-only unbounded x-y^3 over R^2"
+  },
+  {
+    "case": 259,
+    "status": "future",
+    "family": "value/argument-only wrapper semantics",
+    "covered_by": null,
+    "variant_of": 256,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "value-only unbounded x-y^3 over R^2"
+  },
+  {
+    "case": 260,
+    "status": "future",
+    "family": "strict/open-set or unattained-infimum global optimization",
+    "covered_by": null,
+    "variant_of": 256,
+    "variant_kind": "value/argument wrapper variant",
+    "description": "value-only unbounded x-y^3 over R^2"
+  },
+  {
+    "case": 261,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize log(x)+log(y) subject to x+y=10; optimum at (5,5)"
+  },
+  {
+    "case": 262,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same log objective over union x+y=10 or xy=27; optimum log(27)"
+  },
+  {
+    "case": 263,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_minval_exact_periodic_cosine_reference_case_263",
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "global minimum value of cos(x), equal to -1"
+  },
+  {
+    "case": 264,
+    "status": "covered",
+    "family": "covered",
+    "covered_by": "test_mixed_integer_frequency_trig_is_optimized_exactly",
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "global minimum of sin(x)+cos(3x); exact periodic algebraic-trigonometric result"
+  },
+  {
+    "case": 265,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded maximum of sin(x)+cos(3x) on [-21,-14]"
+  },
+  {
+    "case": 266,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "global minimize tan(x)+sin(2x+1); unbounded at tangent poles"
+  },
+  {
+    "case": 267,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded maximize tan(x)+sin(2x+1); pole inside interval gives +infinity"
+  },
+  {
+    "case": 268,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded maximize tan(x)^2+sin(2x+1); pole gives +infinity"
+  },
+  {
+    "case": 269,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded minimize tan(x)^2+sin(2x+1); exact stationary root result"
+  },
+  {
+    "case": 270,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "global trigonometric mixture with tan(x); unbounded below"
+  },
+  {
+    "case": 271,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded version of preceding trigonometric mixture; unbounded above at pole"
+  },
+  {
+    "case": 272,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "global minimize sin(x^2)+cos(3x^2); exact periodic-composition result"
+  },
+  {
+    "case": 273,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded version of sin(x^2)+cos(3x^2) on [-21,-14]"
+  },
+  {
+    "case": 274,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "duplicate global sin(x^2)+cos(3x^2) regression"
+  },
+  {
+    "case": 275,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize sin(exp(x)-x)+cos(2exp(x)-2x+1); exact transcendental stationary result"
+  },
+  {
+    "case": 276,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize the same exp-composed trigonometric objective"
+  },
+  {
+    "case": 277,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize sin(xy) over R^2; maximum 1"
+  },
+  {
+    "case": 278,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize sin(xy)+cos(xy+1) over R^2; exact trigonometric maximum"
+  },
+  {
+    "case": 279,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "maximize sin(x)+cos(x+1) globally"
+  },
+  {
+    "case": 280,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize sin(x)+exp(y) over R^2; unattained infimum -1"
+  },
+  {
+    "case": 281,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize asin(x-y)^2*y^2 over its real domain; minimum 0"
+  },
+  {
+    "case": 282,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize sin(x(y+1))+y^2 inside radius-10 disk; minimum -1"
+  },
+  {
+    "case": 283,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same objective unconstrained; global minimum -1"
+  },
+  {
+    "case": 284,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize sin(2x+3y)+cos(x+y) inside radius-10 disk; minimum -2"
+  },
+  {
+    "case": 285,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same two-variable trigonometric objective unconstrained; minimum -2"
+  },
+  {
+    "case": 286,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize z*sin(x+y+z)+cos(x+2y+3z) for -1<z<1; unattained infimum -2"
+  },
+  {
+    "case": 287,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "closed-z version of preceding problem; minimum -2"
+  },
+  {
+    "case": 288,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "minimize z*exp(x+y+z)+cosh(x+2y+3z) for -1<=z<=1; unbounded below"
+  },
+  {
+    "case": 289,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "same exp/cosh objective for 0<=z<=1; minimum 1 at origin"
+  },
+  {
+    "case": 290,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded composition with Gamma; singularity drives minimum -infinity"
+  },
+  {
+    "case": 291,
+    "status": "future",
+    "family": "global transcendental or special-function optimization",
+    "covered_by": null,
+    "variant_of": null,
+    "variant_kind": null,
+    "description": "bounded composition with Gamma; singularity drives maximum +infinity"
+  }
+]

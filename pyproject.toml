@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=77.0.3", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "symbopt"
+version = "0.1.0"
+description = "Certifying symbolic optimization built on SymPy"
+readme = "README.md"
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [
+  {name = "Bhuvanesh Bhatt", email = "bhuvaneshbhatt@gmail.com"},
+]
+maintainers = [
+  {name = "Bhuvanesh Bhatt", email = "bhuvaneshbhatt@gmail.com"},
+]
+keywords = [
+  "symbolic optimization",
+  "global optimization",
+  "sympy",
+  "sum of squares",
+  "semidefinite programming",
+  "interval arithmetic",
+  "polynomial optimization",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+  "sympy>=1.12",
+  "mpmath>=1.3",
+  "numpy>=1.24",
+  "scipy>=1.10",
+  "python-flint>=0.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/BhuvaneshBhatt/symbopt"
+Repository = "https://github.com/BhuvaneshBhatt/symbopt"
+Issues = "https://github.com/BhuvaneshBhatt/symbopt/issues"
+Documentation = "https://github.com/BhuvaneshBhatt/symbopt/tree/main/docs"
+
+[project.optional-dependencies]
+test = ["pytest>=8", "pytest-timeout>=2.3", "hypothesis>=6.100", "semialg>=0.2.0b1"]
+notebook = ["jupyter>=1", "matplotlib>=3.7"]
+benchmark = ["pytest-benchmark>=4.0"]
+lint = ["ruff>=0.9"]
+semialg = ["semialg>=0.2.0b1"]
+docs = [
+  "sphinx>=8",
+  "myst-parser>=4",
+  "sphinx-rtd-theme>=3",
+]
+release = [
+    "build>=1.2",
+    "twine>=5",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra"
+timeout = 60
+markers = [
+  "integration: tests requiring installed backends or multiple subsystems",
+  "validation: independent numerical validation battery",
+  "property: property-based tests generated with Hypothesis",
+  "reference: externally derived optimization regression cases",
+  "future: documented cases outside the current supported capability set",
+  "slow: tests unsuitable for the fastest local development loop",
+]
+
+[tool.ruff]
+exclude = ["notebooks"]

@@ -1,0 +1,11 @@
+include README.md
+include LICENSE
+include pyproject.toml
+include .readthedocs.yaml
+include validation_results.json
+include validation_summary.csv
+recursive-include docs *.py *.md
+recursive-include notebooks *.ipynb
+recursive-include tests *.py
+recursive-include .github *.yml
+recursive-include benchmarks *.py *.md *.json

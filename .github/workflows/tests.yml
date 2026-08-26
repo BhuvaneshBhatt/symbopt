@@ -1,0 +1,105 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        python:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Upgrade packaging tools
+        run: python -m pip install --upgrade pip setuptools wheel
+
+      - name: Install package and tests
+        run: python -m pip install -e ".[test,lint]"
+
+      - name: Run Ruff
+        run: ruff check .
+
+      - name: Require Arb backend
+        run: python -c "from symbopt import arb_available; assert arb_available(), 'python-flint/Arb is required in CI'"
+
+      - name: Run supported pytest suite
+        run: python -m pytest -q -m "not future"
+
+      - name: Run numerical validation battery
+        run: python -c "from symbopt import run_validation_suite; r=run_validation_suite(); failed={k:v for k,v in r.items() if not v.get('passed',False)}; assert not failed, failed"
+
+  future-cases:
+    name: Future capability inventory
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install package and tests
+        run: python -m pip install -e ".[test,lint]"
+
+      - name: Collect future capability cases
+        run: python -m pytest --collect-only -q -m future
+
+
+  notebook:
+    name: Tutorial notebook
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install notebook dependencies
+        run: python -m pip install -e ".[notebook]"
+
+      - name: Execute tutorial notebook
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import nbformat
+          from nbclient import NotebookClient
+
+          path = Path("notebooks/symbopt_tutorial.ipynb")
+          notebook = nbformat.read(path, as_version=4)
+          NotebookClient(
+              notebook,
+              timeout=120,
+              kernel_name="python3",
+              resources={"metadata": {"path": str(Path.cwd())}},
+          ).execute()
+          PY

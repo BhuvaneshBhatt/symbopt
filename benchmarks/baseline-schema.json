@@ -1,0 +1,4 @@
+{
+  "schema_version": 1,
+  "description": "Schema marker for symbopt benchmark result files. Timings are intentionally machine-specific and are not committed as universal thresholds."
+}

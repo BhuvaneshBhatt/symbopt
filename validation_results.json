@@ -1,0 +1,53 @@
+{
+  "diag_trace": {
+    "kind": "sdp",
+    "passed": true,
+    "status": "approximate",
+    "primal_objective": 2.995403703876622
+  },
+  "chordal_structure": {
+    "kind": "chordal",
+    "passed": true,
+    "num_cliques": 3
+  },
+  "sos_decompose": {
+    "kind": "sos",
+    "passed": true,
+    "success": true
+  },
+  "sos_lower_bound": {
+    "kind": "sos_lb",
+    "passed": true,
+    "lower_bound": 3.0
+  },
+  "poly_multiplier_relax": {
+    "kind": "sos_relax",
+    "passed": true,
+    "lower_bound": -0.0009765625
+  },
+  "moment_atom_extraction_rank1": {
+    "kind": "moment",
+    "passed": true,
+    "atoms": "[{x1: 2}]"
+  },
+  "moment_atom_extraction_multi": {
+    "kind": "moment",
+    "passed": true,
+    "atoms": "[{x1: 0}, {x1: 2}]"
+  },
+  "solve_moment_dual": {
+    "kind": "moments_dual",
+    "passed": true,
+    "candidate_points": "[{x1: 2}]"
+  },
+  "lp_optimization": {
+    "kind": "lp",
+    "passed": true,
+    "objective": 0.0
+  },
+  "qp_optimization": {
+    "kind": "qp",
+    "passed": true,
+    "objective": -5.0
+  }
+}

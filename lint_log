@@ -1,0 +1,479 @@
+F401 `.api.__all__` imported but unused; consider removing, adding to `__all__`, or using a redundant alias
+ --> src/symbopt/__init__.py:4:18
+  |
+3 | from .api import *  # noqa: F403
+4 | from .api import __all__
+  |                  ^^^^^^^
+  |
+help: Use an explicit re-export: `__all__ as __all__`
+
+F401 [*] `typing.Sequence` imported but unused
+ --> src/symbopt/algebraic_numbers.py:2:36
+  |
+1 | from __future__ import annotations
+2 | from typing import Dict, Optional, Sequence, Tuple
+  |                                    ^^^^^^^^
+3 | import sympy as sp
+4 | from sympy.polys.rootoftools import CRootOf, RootOf
+  |
+help: Remove unused import: `typing.Sequence`
+
+F841 Local variable `projected` is assigned to but never used
+   --> src/symbopt/candidates.py:339:5
+    |
+337 |     """Classify only a candidate that survived feasibility filtering."""
+338 |     primal = {v: raw_values[v] for v in kkt.primal_variables if v in raw_values}
+339 |     projected = primal
+    |     ^^^^^^^^^
+340 |     try:
+341 |         active_rows = []
+    |
+help: Remove assignment to unused variable `projected`
+
+E741 Ambiguous variable name: `l`
+   --> src/symbopt/critical_points.py:317:29
+    |
+315 |         L = (
+316 |             rho * f
+317 |             + sum(l * g for l, g in zip(lam, eqs))
+    |                             ^
+318 |             - sum(m * h for m, h in zip(mu, ineqs))
+319 |         )
+    |
+
+E741 Ambiguous variable name: `l`
+   --> src/symbopt/critical_points.py:324:29
+    |
+322 |         L = (
+323 |             f
+324 |             + sum(l * g for l, g in zip(lam, eqs))
+    |                             ^
+325 |             - sum(m * h for m, h in zip(mu, ineqs))
+326 |         )
+    |
+
+F401 [*] `sympy.core.relational.Equality` imported but unused
+  --> src/symbopt/intervals.py:11:35
+   |
+ 9 | import sympy as sp
+10 | from sympy.polys.polyerrors import PolynomialError
+11 | from sympy.core.relational import Equality, Relational
+   |                                   ^^^^^^^^
+12 |
+13 | from .problem_models import IntervalBox, IntervalResult
+   |
+help: Remove unused import: `sympy.core.relational.Equality`
+
+E741 Ambiguous variable name: `l`
+  --> src/symbopt/kkt.py:34:9
+   |
+33 |     L = f
+34 |     for l, g in zip(lam, eq_residuals):
+   |         ^
+35 |         L += l * g
+36 |     for m, h in zip(mu, ineq_residuals):
+   |
+
+F841 Local variable `positions` is assigned to but never used
+   --> src/symbopt/sdp.py:702:5
+    |
+700 | def _separator_equalities(cliques):
+701 |     """Rows enforcing equality of all duplicated clique entries on overlaps."""
+702 |     positions = [
+    |     ^^^^^^^^^
+703 |         {global_i: local_i for local_i, global_i in enumerate(clique)}
+704 |         for clique in cliques
+    |
+help: Remove assignment to unused variable `positions`
+
+F401 [*] `.sos_program.monomial_basis` imported but unused
+ --> src/symbopt/sos.py:9:66
+  |
+7 | import mpmath as mp
+8 | from .semidefinite import SDPSolverConfig, solve_sdp
+9 | from .sos_program import SOSCompilation, compile_sos_relaxation, monomial_basis
+  |                                                                  ^^^^^^^^^^^^^^
+  |
+help: Remove unused import: `.sos_program.monomial_basis`
+
+F401 [*] `symbopt.minimize` imported but unused
+ --> tests/api/test_extremum_api.py:3:55
+  |
+1 | import sympy as sp
+2 |
+3 | from symbopt import argmax, argmin, maximize, maxval, minimize, minval
+  |                                                       ^^^^^^^^
+4 |
+5 | x, y = sp.symbols("x y", real=True)
+  |
+help: Remove unused import: `symbopt.minimize`
+
+F401 [*] `symbopt.intervals.interval_optimize` imported but unused
+ --> tests/infrastructure/test_performance_refactors.py:6:65
+  |
+4 | from symbopt import algebraize
+5 | from symbopt.candidates import build_active_set_plan
+6 | from symbopt.intervals import EvalConfig, _compile_constraints, interval_optimize
+  |                                                                 ^^^^^^^^^^^^^^^^^
+7 | from symbopt.sdp import SDPProblem, _build_workspace, _penalty_value_gradient
+8 | from symbopt.sos_program import compile_sos_relaxation
+  |
+help: Remove unused import: `symbopt.intervals.interval_optimize`
+
+E402 Module level import not at top of file
+  --> tests/infrastructure/test_relations_properties.py:14:1
+   |
+12 | NONZERO_INT = SMALL_INT.filter(lambda value: value != 0)
+13 |
+14 | from symbopt.relation_checks import normalize_relational
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+E402 Module level import not at top of file
+  --> tests/methods/intervals/test_properties.py:14:1
+   |
+12 | NONZERO_INT = SMALL_INT.filter(lambda value: value != 0)
+13 |
+14 | from symbopt import enclose_expression
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+E402 Module level import not at top of file
+  --> tests/methods/quadratic_programming/test_properties.py:14:1
+   |
+12 | NONZERO_INT = SMALL_INT.filter(lambda value: value != 0)
+13 |
+14 | from symbopt import minimize
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+F401 [*] `symbopt.semialgebraic.function_range_exact` imported but unused
+ --> tests/methods/semialgebraic/test_adapter.py:7:5
+  |
+5 |     certify_global_min,
+6 |     exact_feasible,
+7 |     function_range_exact,
+  |     ^^^^^^^^^^^^^^^^^^^^
+8 |     make_formula,
+9 |     minimize_exact,
+  |
+help: Remove unused import
+
+F401 [*] `symbopt.semialgebraic.prove_nonnegative_exact` imported but unused
+  --> tests/methods/semialgebraic/test_adapter.py:10:5
+   |
+ 8 |     make_formula,
+ 9 |     minimize_exact,
+10 |     prove_nonnegative_exact,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+11 |     prune_redundant,
+12 |     semialg_available,
+   |
+help: Remove unused import
+
+F811 [*] Redefinition of unused `prove_nonnegative_exact` from line 10
+   --> tests/methods/semialgebraic/test_adapter.py:151:39
+    |
+150 | def test_sign_proof_adapter_uses_semialg_sign_backend():
+151 |     from symbopt.semialgebraic import prove_nonnegative_exact
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^ `prove_nonnegative_exact` redefined here
+152 |
+153 |     x = sp.symbols("x", real=True)
+    |
+   ::: tests/methods/semialgebraic/test_adapter.py:10:5
+    |
+  8 |     make_formula,
+  9 |     minimize_exact,
+ 10 |     prove_nonnegative_exact,
+    |     ----------------------- previous definition of `prove_nonnegative_exact` here
+ 11 |     prune_redundant,
+ 12 |     semialg_available,
+    |
+help: Remove definition: `prove_nonnegative_exact`
+
+F811 [*] Redefinition of unused `prove_nonnegative_exact` from line 10
+   --> tests/methods/semialgebraic/test_adapter.py:165:39
+    |
+164 | def test_constrained_sign_proof_uses_exact_implication():
+165 |     from symbopt.semialgebraic import prove_nonnegative_exact
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^ `prove_nonnegative_exact` redefined here
+166 |
+167 |     x = sp.symbols("x", real=True)
+    |
+   ::: tests/methods/semialgebraic/test_adapter.py:10:5
+    |
+  8 |     make_formula,
+  9 |     minimize_exact,
+ 10 |     prove_nonnegative_exact,
+    |     ----------------------- previous definition of `prove_nonnegative_exact` here
+ 11 |     prune_redundant,
+ 12 |     semialg_available,
+    |
+help: Remove definition: `prove_nonnegative_exact`
+
+F811 [*] Redefinition of unused `function_range_exact` from line 7
+   --> tests/methods/semialgebraic/test_adapter.py:178:39
+    |
+177 | def test_function_range_extracts_exact_endpoints():
+178 |     from symbopt.semialgebraic import function_range_exact
+    |                                       ^^^^^^^^^^^^^^^^^^^^ `function_range_exact` redefined here
+179 |
+180 |     x = sp.symbols("x", real=True)
+    |
+   ::: tests/methods/semialgebraic/test_adapter.py:7:5
+    |
+  5 |     certify_global_min,
+  6 |     exact_feasible,
+  7 |     function_range_exact,
+    |     -------------------- previous definition of `function_range_exact` here
+  8 |     make_formula,
+  9 |     minimize_exact,
+    |
+help: Remove definition: `function_range_exact`
+
+F401 [*] `symbopt.function_range_exact` imported but unused
+ --> tests/methods/semialgebraic/test_backend.py:5:5
+  |
+4 | from symbopt import (
+5 |     function_range_exact,
+  |     ^^^^^^^^^^^^^^^^^^^^
+6 |     minimize,
+7 |     prove_nonnegative_exact,
+  |
+help: Remove unused import
+
+F401 [*] `symbopt.minimize` imported but unused
+ --> tests/methods/semialgebraic/test_backend.py:6:5
+  |
+4 | from symbopt import (
+5 |     function_range_exact,
+6 |     minimize,
+  |     ^^^^^^^^
+7 |     prove_nonnegative_exact,
+8 |     semialg_available,
+  |
+help: Remove unused import
+
+F401 [*] `symbopt.prove_nonnegative_exact` imported but unused
+ --> tests/methods/semialgebraic/test_backend.py:7:5
+  |
+5 |     function_range_exact,
+6 |     minimize,
+7 |     prove_nonnegative_exact,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^
+8 |     semialg_available,
+9 | )
+  |
+help: Remove unused import
+
+F811 [*] Redefinition of unused `minimize` from line 6
+  --> tests/methods/semialgebraic/test_backend.py:21:25
+   |
+19 | def test_live_semialg_backend_when_installed():
+20 |     pytest.importorskip("semialg")
+21 |     from symbopt import minimize
+   |                         ^^^^^^^^ `minimize` redefined here
+22 |
+23 |     x = sp.symbols("x", real=True)
+   |
+  ::: tests/methods/semialgebraic/test_backend.py:6:5
+   |
+ 4 | from symbopt import (
+ 5 |     function_range_exact,
+ 6 |     minimize,
+   |     -------- previous definition of `minimize` here
+ 7 |     prove_nonnegative_exact,
+ 8 |     semialg_available,
+   |
+help: Remove definition: `minimize`
+
+F811 [*] Redefinition of unused `function_range_exact` from line 5
+  --> tests/methods/semialgebraic/test_backend.py:47:25
+   |
+45 | def test_live_semialg_function_range_when_installed():
+46 |     pytest.importorskip("semialg")
+47 |     from symbopt import function_range_exact
+   |                         ^^^^^^^^^^^^^^^^^^^^ `function_range_exact` redefined here
+48 |
+49 |     x = sp.symbols("x", real=True)
+   |
+  ::: tests/methods/semialgebraic/test_backend.py:5:5
+   |
+ 4 | from symbopt import (
+ 5 |     function_range_exact,
+   |     -------------------- previous definition of `function_range_exact` here
+ 6 |     minimize,
+ 7 |     prove_nonnegative_exact,
+   |
+help: Remove definition: `function_range_exact`
+
+F811 [*] Redefinition of unused `function_range_exact` from line 5
+  --> tests/methods/semialgebraic/test_backend.py:64:25
+   |
+62 | def test_live_semialg_disconnected_range_when_installed():
+63 |     pytest.importorskip("semialg")
+64 |     from symbopt import function_range_exact
+   |                         ^^^^^^^^^^^^^^^^^^^^ `function_range_exact` redefined here
+65 |
+66 |     x = sp.symbols("x", real=True)
+   |
+  ::: tests/methods/semialgebraic/test_backend.py:5:5
+   |
+ 4 | from symbopt import (
+ 5 |     function_range_exact,
+   |     -------------------- previous definition of `function_range_exact` here
+ 6 |     minimize,
+ 7 |     prove_nonnegative_exact,
+   |
+help: Remove definition: `function_range_exact`
+
+F811 [*] Redefinition of unused `prove_nonnegative_exact` from line 7
+  --> tests/methods/semialgebraic/test_backend.py:81:25
+   |
+79 | def test_live_semialg_global_sign_proof_when_installed():
+80 |     pytest.importorskip("semialg")
+81 |     from symbopt import prove_nonnegative_exact
+   |                         ^^^^^^^^^^^^^^^^^^^^^^^ `prove_nonnegative_exact` redefined here
+82 |
+83 |     x = sp.symbols("x", real=True)
+   |
+  ::: tests/methods/semialgebraic/test_backend.py:7:5
+   |
+ 5 |     function_range_exact,
+ 6 |     minimize,
+ 7 |     prove_nonnegative_exact,
+   |     ----------------------- previous definition of `prove_nonnegative_exact` here
+ 8 |     semialg_available,
+ 9 | )
+   |
+help: Remove definition: `prove_nonnegative_exact`
+
+F811 [*] Redefinition of unused `prove_nonnegative_exact` from line 7
+  --> tests/methods/semialgebraic/test_backend.py:90:25
+   |
+88 | def test_live_semialg_constrained_sign_proof_when_installed():
+89 |     pytest.importorskip("semialg")
+90 |     from symbopt import prove_nonnegative_exact
+   |                         ^^^^^^^^^^^^^^^^^^^^^^^ `prove_nonnegative_exact` redefined here
+91 |
+92 |     x = sp.symbols("x", real=True)
+   |
+  ::: tests/methods/semialgebraic/test_backend.py:7:5
+   |
+ 5 |     function_range_exact,
+ 6 |     minimize,
+ 7 |     prove_nonnegative_exact,
+   |     ----------------------- previous definition of `prove_nonnegative_exact` here
+ 8 |     semialg_available,
+ 9 | )
+   |
+help: Remove definition: `prove_nonnegative_exact`
+
+E402 Module level import not at top of file
+  --> tests/methods/sos/test_properties.py:14:1
+   |
+12 | NONZERO_INT = SMALL_INT.filter(lambda value: value != 0)
+13 |
+14 | from symbopt import sos_decompose
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+F821 Undefined name `SDPProblem`
+  --> tests/methods/sos/test_sos.py:15:12
+   |
+13 |     C = np.eye(2)
+14 |     A = [np.array([[1.0, 0.0], [0.0, 0.0]]), np.array([[0.0, 0.0], [0.0, 1.0]])]
+15 |     return SDPProblem.single_block(C=C, A=A, b=np.array([1.0, 2.0]))
+   |            ^^^^^^^^^^
+   |
+
+F401 [*] `numpy` imported but unused
+ --> tests/reference/by_input_type/test_nonsmooth.py:1:17
+  |
+1 | import numpy as np
+  |                 ^^
+2 | import pytest
+3 | import sympy as sp
+  |
+help: Remove unused import: `numpy`
+
+F401 [*] `symbopt.solve_lp` imported but unused
+ --> tests/reference/by_input_type/test_nonsmooth.py:5:31
+  |
+3 | import sympy as sp
+4 |
+5 | from symbopt import minimize, solve_lp
+  |                               ^^^^^^^^
+6 |
+7 | pytestmark = pytest.mark.reference
+  |
+help: Remove unused import: `symbopt.solve_lp`
+
+F401 [*] `numpy` imported but unused
+ --> tests/reference/by_input_type/test_polynomial.py:1:17
+  |
+1 | import numpy as np
+  |                 ^^
+2 | import pytest
+3 | import sympy as sp
+  |
+help: Remove unused import: `numpy`
+
+F401 [*] `symbopt.solve_lp` imported but unused
+ --> tests/reference/by_input_type/test_polynomial.py:5:31
+  |
+3 | import sympy as sp
+4 |
+5 | from symbopt import minimize, solve_lp
+  |                               ^^^^^^^^
+6 |
+7 | pytestmark = pytest.mark.reference
+  |
+help: Remove unused import: `symbopt.solve_lp`
+
+F401 [*] `numpy` imported but unused
+ --> tests/reference/by_input_type/test_radical.py:1:17
+  |
+1 | import numpy as np
+  |                 ^^
+2 | import pytest
+3 | import sympy as sp
+  |
+help: Remove unused import: `numpy`
+
+F401 [*] `symbopt.solve_lp` imported but unused
+ --> tests/reference/by_input_type/test_radical.py:5:31
+  |
+3 | import sympy as sp
+4 |
+5 | from symbopt import minimize, solve_lp
+  |                               ^^^^^^^^
+6 |
+7 | pytestmark = pytest.mark.reference
+  |
+help: Remove unused import: `symbopt.solve_lp`
+
+F401 [*] `numpy` imported but unused
+ --> tests/reference/by_input_type/test_rational.py:1:17
+  |
+1 | import numpy as np
+  |                 ^^
+2 | import pytest
+3 | import sympy as sp
+  |
+help: Remove unused import: `numpy`
+
+F401 [*] `symbopt.solve_lp` imported but unused
+ --> tests/reference/by_input_type/test_rational.py:5:31
+  |
+3 | import sympy as sp
+4 |
+5 | from symbopt import minimize, solve_lp
+  |                               ^^^^^^^^
+6 |
+7 | pytestmark = pytest.mark.reference
+  |
+help: Remove unused import: `symbopt.solve_lp`
+
+Found 37 errors.
+[*] 26 fixable with the `--fix` option (2 hidden fixes can be enabled with the `--unsafe-fixes` option).
