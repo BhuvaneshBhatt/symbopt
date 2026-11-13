@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Optional, Tuple
+
 import sympy as sp
 from sympy.polys.rootoftools import CRootOf, RootOf
 
@@ -17,7 +17,7 @@ def is_fixed_real_algebraic(expr: object) -> bool:
     )
 
 
-def isolating_interval(expr: object) -> Optional[Tuple[sp.Rational, sp.Rational]]:
+def isolating_interval(expr: object) -> tuple[sp.Rational, sp.Rational] | None:
     """Return an exact rational isolating interval for a fixed real RootOf.
 
     Rational/algebraic constants that SymPy can radicalize are returned as a
@@ -47,6 +47,7 @@ def isolating_interval(expr: object) -> Optional[Tuple[sp.Rational, sp.Rational]
 
 
 def exactify(expr):
+    """Recover rational data from an approximation while preserving exact algebraic branches."""
     value = sp.sympify(expr)
     # Preserve exact algebraic branch objects; nsimplify is intended for
     # approximate input and can obscure RootOf identity/provenance.
@@ -67,11 +68,12 @@ def exactify(expr):
             return value
 
 
-def exactify_dict(d: Dict[sp.Symbol, object]) -> Dict[sp.Symbol, sp.Expr]:
+def exactify_dict(d: dict[sp.Symbol, object]) -> dict[sp.Symbol, sp.Expr]:
+    """Recover rational coordinates from approximate values; this alone proves no feasibility claim."""
     return {k: exactify(v) for k, v in d.items()}
 
 
-def _truth_value(relation) -> Optional[bool]:
+def _truth_value(relation) -> bool | None:
     if relation is sp.S.true or relation is True:
         return True
     if relation is sp.S.false or relation is False:
@@ -87,7 +89,7 @@ def _truth_value(relation) -> Optional[bool]:
     return None
 
 
-def algebraic_compare(a, b) -> Optional[int]:
+def algebraic_compare(a, b) -> int | None:
     """Compare exact real algebraic values without tolerance-based equality.
 
     Returns ``-1``, ``0`` or ``1`` when the ordering is established exactly,

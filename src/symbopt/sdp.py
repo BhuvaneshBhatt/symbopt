@@ -1,26 +1,27 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from importlib.util import find_spec
 
 import numpy as np
 from scipy.optimize import minimize
 
+from .chordal import SparsityGraph as IndexedSparsityGraph
+from .chordal import chordal_extension
 from .diagnostics import DiagnosticKind, SolverDiagnostic
-from .chordal import SparsityGraph as IndexedSparsityGraph, chordal_extension
 
 
 @dataclass
 class SDPProblem:
     """Block-structured primal semidefinite program with optional nonnegative scalar variables."""
 
-    C_blocks: List[np.ndarray]
-    A_blocks: List[List[np.ndarray]]
+    C_blocks: list[np.ndarray]
+    A_blocks: list[list[np.ndarray]]
     b: np.ndarray
-    B: Optional[np.ndarray] = None
-    c: Optional[np.ndarray] = None
+    B: np.ndarray | None = None
+    c: np.ndarray | None = None
     name: str = "dense_sdp"
-    metadata: Dict[str, object] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.C_blocks = [
@@ -66,6 +67,7 @@ class SDPProblem:
         c=None,
         name="dense_sdp",
     ):
+        """Build a one-block SDP from objective and affine constraint matrices."""
         return cls(
             C_blocks=[C],
             A_blocks=[[block] for block in A],
@@ -77,18 +79,22 @@ class SDPProblem:
 
     @property
     def num_blocks(self) -> int:
+        """Number of PSD matrix blocks in the numerical SDP."""
         return len(self.C_blocks)
 
     @property
-    def block_sizes(self) -> List[int]:
+    def block_sizes(self) -> list[int]:
+        """Dimensions of the PSD matrix blocks in the stored order."""
         return [block.shape[0] for block in self.C_blocks]
 
     @property
     def constraint_count(self) -> int:
+        """Number of affine constraints in the numerical SDP."""
         return len(self.b)
 
     @property
     def scalar_count(self) -> int:
+        """Number of additional nonnegative scalar decision variables."""
         return 0 if self.B is None else self.B.shape[1]
 
 
@@ -97,11 +103,11 @@ class SDPResult:
     """Numerical semidefinite-solver result in the original problem scaling."""
 
     status: str
-    X_blocks: List[np.ndarray]
+    X_blocks: list[np.ndarray]
     y: np.ndarray
-    S_blocks: List[np.ndarray]
-    z: Optional[np.ndarray]
-    t: Optional[np.ndarray]
+    S_blocks: list[np.ndarray]
+    z: np.ndarray | None
+    t: np.ndarray | None
     primal_objective: float
     dual_objective: float
     primal_residual_norm: float
@@ -109,25 +115,28 @@ class SDPResult:
     gap: float
     iterations: int
     message: str
-    history: List[Dict[str, float]] = field(default_factory=list)
-    diagnostics: List[SolverDiagnostic] = field(default_factory=list)
+    history: list[dict[str, float]] = field(default_factory=list)
+    diagnostics: list[SolverDiagnostic] = field(default_factory=list)
 
 
 @dataclass
 class SDPWorkspace:
+    """Cached block tensors and numerical indexing for one SDP solve."""
+
     problem: SDPProblem
     original_problem: SDPProblem
     objective_scale: float
     row_scale: np.ndarray
     constraint_op: np.ndarray
     objective_vec: np.ndarray
-    block_tensors: List[np.ndarray]
+    block_tensors: list[np.ndarray]
     dual_matrix: np.ndarray
     dual_rhs: np.ndarray
-    dual_cholesky: Optional[np.ndarray]
+    dual_cholesky: np.ndarray | None
 
 
 def svec(matrix: np.ndarray) -> np.ndarray:
+    """Vectorize a symmetric matrix with square-root-two scaling on off-diagonal entries."""
     matrix = np.asarray(matrix, dtype=float)
     size = matrix.shape[0]
     values = []
@@ -141,6 +150,7 @@ def svec(matrix: np.ndarray) -> np.ndarray:
 
 
 def smat(values: np.ndarray, size: int) -> np.ndarray:
+    """Invert symmetric vectorization with the matching off-diagonal scaling."""
     values = np.asarray(values, dtype=float).reshape(-1)
     matrix = np.zeros((size, size), dtype=float)
     index = 0
@@ -156,6 +166,7 @@ def smat(values: np.ndarray, size: int) -> np.ndarray:
 
 
 def fro_inner(first: np.ndarray, second: np.ndarray) -> float:
+    """Compute the Frobenius inner product of the supplied numerical matrices."""
     return float(np.sum(first * second))
 
 
@@ -244,14 +255,14 @@ def _build_workspace(problem: SDPProblem, reg: float = 1e-8) -> SDPWorkspace:
     )
 
 
-def _stack_blocks(blocks: List[np.ndarray]) -> np.ndarray:
+def _stack_blocks(blocks: list[np.ndarray]) -> np.ndarray:
     return np.concatenate([block.reshape(-1) for block in blocks])
 
 
 def _primal_residual(
     workspace: SDPWorkspace,
-    blocks: List[np.ndarray],
-    scalars: Optional[np.ndarray],
+    blocks: list[np.ndarray],
+    scalars: np.ndarray | None,
 ) -> np.ndarray:
     residual = workspace.constraint_op @ _stack_blocks(blocks)
     problem = workspace.problem
@@ -262,8 +273,8 @@ def _primal_residual(
 
 def _primal_objective(
     workspace: SDPWorkspace,
-    blocks: List[np.ndarray],
-    scalars: Optional[np.ndarray],
+    blocks: list[np.ndarray],
+    scalars: np.ndarray | None,
 ) -> float:
     value = workspace.objective_vec @ _stack_blocks(blocks)
     problem = workspace.problem
@@ -310,8 +321,8 @@ def _estimate_dual(
 def _dual_residuals(
     workspace: SDPWorkspace,
     dual: np.ndarray,
-    slack_blocks: List[np.ndarray],
-    scalar_slack: Optional[np.ndarray],
+    slack_blocks: list[np.ndarray],
+    scalar_slack: np.ndarray | None,
 ):
     problem = workspace.problem
     residuals = []
@@ -342,7 +353,7 @@ def _initial_params(problem: SDPProblem):
 
 def _pack_warm_start(
     problem: SDPProblem,
-    warm_start: Optional[dict],
+    warm_start: dict | None,
 ):
     if not warm_start:
         return _initial_params(problem)
@@ -470,8 +481,9 @@ def _solve_penalty_once(
     tol: float = 1e-7,
     reg: float = 1e-8,
     verbose: bool = False,
-    warm_start: Optional[dict] = None,
+    warm_start: dict | None = None,
 ):
+    """Solve one penalty sequence from a prepared SDP workspace."""
     problem = workspace.problem
     theta = _pack_warm_start(problem, warm_start)
     penalties = [
@@ -490,8 +502,8 @@ def _solve_penalty_once(
 
     for outer, penalty in enumerate(penalties):
 
-        def penalty_objective(params):
-            return _penalty_value_gradient(workspace, params, penalty, reg)
+        def penalty_objective(params, _penalty=penalty):
+            return _penalty_value_gradient(workspace, params, _penalty, reg)
 
         starts = [theta]
         if outer == 0:
@@ -838,7 +850,7 @@ def _rebuild_chordal_result(
 
 def _warm_start_options(
     problem: SDPProblem,
-    warm_start: Optional[dict],
+    warm_start: dict | None,
 ):
     starts = [warm_start]
     if warm_start is None:
@@ -857,7 +869,7 @@ def _warm_start_options(
 
 def _best_result(
     result: SDPResult,
-    best: Optional[SDPResult],
+    best: SDPResult | None,
 ):
     if best is None:
         return result
@@ -879,7 +891,7 @@ def _solve_penalty_sdp(
     tol: float = 1e-7,
     reg: float = 1e-8,
     verbose: bool = False,
-    warm_start: Optional[dict] = None,
+    warm_start: dict | None = None,
 ):
     workspace = _build_workspace(problem, reg=reg)
     best = None
@@ -973,7 +985,7 @@ def solve_sdp_dense(
     tol: float = 1e-7,
     reg: float = 1e-8,
     verbose: bool = False,
-    warm_start: Optional[dict] = None,
+    warm_start: dict | None = None,
     sparse_chordal: bool = False,
 ) -> SDPResult:
     """Solve an SDP with the package's dense penalty backend.
@@ -998,4 +1010,147 @@ def solve_sdp_dense(
         reg=reg,
         verbose=verbose,
         warm_start=warm_start,
+    )
+
+
+def cvxpy_available() -> bool:
+    """Return whether the optional CVXPY SDP adapter is importable."""
+    return find_spec("cvxpy") is not None
+
+
+def available_external_sdp_solvers() -> list[str]:
+    """Return installed CVXPY solvers capable of accepting conic problems."""
+    try:
+        import cvxpy as cp
+    except ImportError:
+        return []
+    preferred = ("MOSEK", "CLARABEL", "CVXOPT", "SCS")
+    installed = set(cp.installed_solvers())
+    return [name for name in preferred if name in installed]
+
+
+def solve_sdp_cvxpy(
+    problem: SDPProblem,
+    *,
+    solver: str | None = None,
+    max_iter: int = 10000,
+    tol: float = 1e-7,
+    verbose: bool = False,
+) -> SDPResult:
+    """Solve ``problem`` through an optional mature CVXPY conic backend.
+
+    The returned matrices remain numerical candidates.  SOS callers must still
+    perform their existing exact affine reconstruction, polynomial-identity
+    check, and exact PSD verification before exposing a certificate.
+    """
+    try:
+        import cvxpy as cp
+    except ImportError as exc:
+        raise ImportError("CVXPY is required for the external SDP backend") from exc
+
+    choices = available_external_sdp_solvers()
+    chosen = solver.upper() if solver else (choices[0] if choices else None)
+    if chosen is None or chosen not in set(cp.installed_solvers()):
+        raise RuntimeError("No supported CVXPY conic solver is installed")
+
+    x_vars = [cp.Variable(block.shape, symmetric=True) for block in problem.C_blocks]
+    psd_constraints = [variable >> 0 for variable in x_vars]
+    constraints = list(psd_constraints)
+    t_var = cp.Variable(problem.scalar_count) if problem.scalar_count else None
+    scalar_constraint = None
+    if t_var is not None:
+        scalar_constraint = t_var >= 0
+        constraints.append(scalar_constraint)
+
+    equalities = []
+    for row_index, row in enumerate(problem.A_blocks):
+        expression = 0
+        for matrix, variable in zip(row, x_vars):
+            expression += cp.sum(cp.multiply(matrix, variable))
+        if problem.B is not None and t_var is not None:
+            expression += problem.B[row_index, :] @ t_var
+        equality = expression == problem.b[row_index]
+        constraints.append(equality)
+        equalities.append(equality)
+
+    objective_expr = 0
+    for matrix, variable in zip(problem.C_blocks, x_vars):
+        objective_expr += cp.sum(cp.multiply(matrix, variable))
+    if problem.c is not None and t_var is not None:
+        objective_expr += problem.c @ t_var
+    model = cp.Problem(cp.Minimize(objective_expr), constraints)
+
+    kwargs = {"verbose": verbose}
+    if chosen == "SCS":
+        kwargs.update({"max_iters": int(max_iter), "eps": float(tol)})
+    elif chosen == "CLARABEL":
+        kwargs.update(
+            {
+                "max_iter": int(max_iter),
+                "tol_gap_abs": float(tol),
+                "tol_feas": float(tol),
+            }
+        )
+    model.solve(solver=chosen, **kwargs)
+
+    if model.status not in {cp.OPTIMAL, cp.OPTIMAL_INACCURATE}:
+        raise RuntimeError(f"CVXPY/{chosen} returned status {model.status}")
+    if any(variable.value is None for variable in x_vars):
+        raise RuntimeError("CVXPY did not return primal PSD blocks")
+
+    blocks = [
+        _symmetrize(np.asarray(variable.value, dtype=float)) for variable in x_vars
+    ]
+    scalars = (
+        None if t_var is None else np.asarray(t_var.value, dtype=float).reshape(-1)
+    )
+    y = np.asarray(
+        [constraint.dual_value for constraint in equalities], dtype=float
+    ).reshape(-1)
+    slacks = [
+        _symmetrize(np.asarray(constraint.dual_value, dtype=float))
+        for constraint in psd_constraints
+    ]
+    z = None
+    if scalar_constraint is not None and scalar_constraint.dual_value is not None:
+        z = np.asarray(scalar_constraint.dual_value, dtype=float).reshape(-1)
+
+    primal_residual = []
+    for row_index, row in enumerate(problem.A_blocks):
+        value = sum(fro_inner(matrix, block) for matrix, block in zip(row, blocks))
+        if problem.B is not None and scalars is not None:
+            value += float(problem.B[row_index, :] @ scalars)
+        primal_residual.append(value - problem.b[row_index])
+    primal_residual_norm = float(np.linalg.norm(primal_residual))
+
+    dual_parts = []
+    for block_index, objective in enumerate(problem.C_blocks):
+        stationarity = objective.copy()
+        for row_index in range(problem.constraint_count):
+            stationarity += y[row_index] * problem.A_blocks[row_index][block_index]
+        stationarity -= slacks[block_index]
+        dual_parts.append(np.linalg.norm(stationarity, ord="fro"))
+    if problem.c is not None and problem.B is not None and z is not None:
+        dual_parts.append(np.linalg.norm(problem.c + problem.B.T @ y - z))
+    dual_residual_norm = float(np.linalg.norm(dual_parts))
+
+    primal_objective = float(model.value)
+    dual_objective = float(-problem.b @ y)
+    gap = abs(primal_objective - dual_objective)
+    iterations = int(getattr(model.solver_stats, "num_iters", 0) or 0)
+    return SDPResult(
+        status="optimal" if model.status == cp.OPTIMAL else "optimal_inaccurate",
+        X_blocks=blocks,
+        y=y,
+        S_blocks=slacks,
+        z=z,
+        t=scalars,
+        primal_objective=primal_objective,
+        dual_objective=dual_objective,
+        primal_residual_norm=primal_residual_norm,
+        dual_residual_norm=dual_residual_norm,
+        gap=gap,
+        iterations=iterations,
+        message=f"Solved by CVXPY/{chosen}; numerical candidate requires exact post-verification.",
+        diagnostics=[],
     )

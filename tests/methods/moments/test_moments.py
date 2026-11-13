@@ -1,11 +1,12 @@
 import sympy as sp
+
 from symbopt import (
-    build_moment_matrix,
     build_localizing_matrix,
+    build_moment_matrix,
     build_moment_relaxation,
     extract_moment_atoms,
-    solve_moment_dual,
     link_sos_moments,
+    solve_moment_dual,
 )
 
 

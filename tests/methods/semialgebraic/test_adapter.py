@@ -126,7 +126,7 @@ def test_exact_point_solver_falls_back_when_rur_api_is_missing():
     assert {sp.simplify(point[x]) for point in points} == {sp.sqrt(2), -sp.sqrt(2)}
 
 
-def test_global_min_query_requires_candidate_feasibility_then_unsat():
+def test_global_minimum_query_premises():
     x = sp.symbols("x", real=True)
     backend = _FakeSemialg([True, False])
     proof = certify_global_min(
@@ -149,7 +149,6 @@ def test_exact_minimizer_result_conversion():
         [x],
         backend=_FakeSemialg(),
     )
-    assert result is not None
     assert result.value == 0
     assert result.points == ({x: 2},)
     assert result.attained
@@ -192,7 +191,6 @@ def test_function_range_extracts_exact_endpoints():
         [x],
         backend=_RangeBackend(),
     )
-    assert result is not None
     assert result.infimum == 0
     assert result.supremum == 4
     assert result.infimum_attained is True
@@ -265,7 +263,7 @@ def test_semialg_available_bool():
     assert second is first
 
 
-def test_capability_detection_and_policy_forwarding_for_modern_backend():
+def test_backend_capability_policy():
     from symbopt.semialgebraic import get_semialg_capabilities
 
     x, y, z = sp.symbols("x y z", real=True)
@@ -309,7 +307,6 @@ def test_capability_detection_and_policy_forwarding_for_modern_backend():
         certification="complete",
         range_cost_limit=17,
     )
-    assert result is not None
     assert result.certified is True
     assert result.backend_version == "0.2.0b1"
     assert backend.received == ((x, y, z), "complete", 17)
@@ -347,12 +344,11 @@ def test_minimize_exact_has_no_symbopt_dimension_ceiling():
         [a, b, c, d],
         backend=HighDimBackend(),
     )
-    assert result is not None
     assert result.value == 0
     assert result.certified is True
 
 
-def test_uncertified_semialg_candidate_is_not_a_rigorous_lower_bound():
+def test_semialgebraic_candidate_status():
     from symbopt.certification import build_certificate
     from symbopt.semialgebraic import SemialgOptResult
 

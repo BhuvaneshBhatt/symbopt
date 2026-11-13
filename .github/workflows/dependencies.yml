@@ -1,0 +1,77 @@
+name: Installed wheel dependency coverage
+
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 8 * * 3"
+
+jobs:
+  core-dependencies:
+    name: ${{ matrix.dependencies }} / ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.14"]
+        dependencies: [latest]
+        include:
+          - os: ubuntu-latest
+            python: "3.11"
+            dependencies: minimum
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Build wheel without installing the source package
+        run: python -m pip wheel --no-deps . --wheel-dir dist
+      - name: Install minimum runtime dependencies and test tools
+        if: matrix.dependencies == 'minimum'
+        run: >-
+          python -m pip install -c tests/constraints-minimum.txt
+          sympy mpmath numpy scipy python-flint pytest pytest-timeout hypothesis
+      - name: Install latest runtime dependencies and test tools
+        if: matrix.dependencies == 'latest'
+        run: python -m pip install --upgrade sympy mpmath numpy scipy python-flint pytest pytest-timeout hypothesis
+      - name: Install built wheel
+        shell: bash
+        run: python -m pip install --no-deps dist/*.whl
+      - name: Check resolved environment
+        run: python -m pip check
+      - name: Exercise installed core without optional analysis backends
+        run: python tests/packaging/core_runtime.py
+      - name: Run core mathematical and documentation suites
+        run: python tools/test_wheel.py --suite core --junitxml=wheel-core.xml
+      - name: Record dependency versions
+        if: always()
+        run: python -m pip freeze
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-${{ matrix.dependencies }}-${{ matrix.os }}-${{ matrix.python }}
+          path: wheel-core.xml
+
+  analysis-dependencies:
+    name: Latest optional analysis dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: python -m pip wheel --no-deps . --wheel-dir dist
+      - run: python -m pip install --upgrade pytest pytest-timeout hypothesis "funcprops>=0.5.0" "semialg>=1.5.0"
+      - run: python -m pip install dist/*.whl
+      - run: python -m pip check
+      - name: Run supported installed-wheel suite
+        run: python tools/test_wheel.py --suite supported --junitxml=wheel-analysis.xml
+      - name: Record dependency versions
+        if: always()
+        run: python -m pip freeze
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latest-analysis
+          path: wheel-analysis.xml

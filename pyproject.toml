@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "symbopt"
-version = "0.1.0"
+version = "0.2.0"
 description = "Certifying symbolic optimization built on SymPy"
 readme = "README.md"
 license = "GPL-3.0-only"
@@ -41,11 +41,11 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-  "sympy>=1.12",
-  "mpmath>=1.3",
+  "sympy>=1.14,<2",
+  "mpmath>=1.3,<2",
   "numpy>=1.24",
-  "scipy>=1.10",
-  "python-flint>=0.8.0",
+  "scipy>=1.15.3",
+  "python-flint>=0.9,<1",
 ]
 
 [project.urls]
@@ -55,11 +55,13 @@ Issues = "https://github.com/BhuvaneshBhatt/symbopt/issues"
 Documentation = "https://github.com/BhuvaneshBhatt/symbopt/tree/main/docs"
 
 [project.optional-dependencies]
-test = ["pytest>=8", "pytest-timeout>=2.3", "hypothesis>=6.100", "semialg>=0.2.0b1"]
+test = ["pytest>=8", "pytest-timeout>=2.3", "hypothesis>=6.100"]
 notebook = ["jupyter>=1", "matplotlib>=3.7"]
 benchmark = ["pytest-benchmark>=4.0"]
 lint = ["ruff>=0.9"]
-semialg = ["semialg>=0.2.0b1"]
+semialg = ["semialg>=1.5.0"]
+funcprops = ["funcprops>=0.5.0"]
+scip = ["pyscipopt>=6"]
 docs = [
   "sphinx>=8",
   "myst-parser>=4",
@@ -86,9 +88,12 @@ markers = [
   "validation: independent numerical validation battery",
   "property: property-based tests generated with Hypothesis",
   "reference: externally derived optimization regression cases",
-  "future: documented cases outside the current supported capability set",
+  "reference_corpus: complete bounded external corpus profile",
+  "unsupported: documented cases outside the supported capability set",
+  "capability_probe: bounded executable probes for unsupported capability boundaries",
   "slow: tests unsuitable for the fastest local development loop",
 ]
 
 [tool.ruff]
+extend-exclude = ["*.md", "*.ipynb"]
 exclude = ["notebooks"]

@@ -1,6 +1,6 @@
 import sympy as sp
 
-from symbopt import minimize
+from symbopt import minimize_result
 from symbopt.candidates import build_active_set_plan
 
 
@@ -42,12 +42,11 @@ def test_active_budget_keeps_boundary_solution():
         sp.Le(x, 6),
         sp.Le(x, 7),
     ]
-    result = minimize(
+    result = minimize_result(
         x**4,
         constraints,
         max_active_sets=3,
         use_sos=False,
         interval_max_boxes=20,
     )
-    assert result.best_candidate is not None
     assert result.best_candidate.primal_values[x] == 1

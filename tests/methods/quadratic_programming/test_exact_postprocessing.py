@@ -1,11 +1,11 @@
 import sympy as sp
 
-from symbopt import minimize
+from symbopt import minimize_result
 
 
 def test_qp_exact_postprocessing_certificate():
     x = sp.symbols("x", real=True)
-    result = minimize((x + 2) ** 2)
+    result = minimize_result((x + 2) ** 2)
     assert result.best_candidate.primal_values[x] == -2
     artifact = next(
         item for item in result.certificate.proof_objects if item.kind == "qp"

@@ -1,12 +1,12 @@
 # Worked examples
 
-These examples are organized by problem class rather than implementation module.
-Each page shows the mathematical problem, `symbopt` input, expected route, and
-the result/certificate fields to inspect.
+These examples are organized by problem class rather than implementation module. Each page shows the mathematical problem, `symbopt` input, expected route, and the result/certificate fields to inspect.
 
 ```{toctree}
 :maxdepth: 1
 
+applications
+capability-tour
 high-level-api
 unconstrained
 equality-constrained

@@ -1,5 +1,6 @@
-import sympy as sp
 import pytest
+import sympy as sp
+
 from symbopt import algebraize, algebraize_cases
 
 
@@ -63,3 +64,22 @@ def test_rootof_real_branch_lifts_when_supported():
     r = sp.CRootOf(z**2 - 2, 0)
     p = algebraize(r + 1, [])
     assert any(rec.kind == "rootof" for rec in p.lift_records)
+
+
+def test_piecewise_cases_keep_objective_branch_conditions():
+    x = sp.symbols("x", real=True)
+    cases = algebraize_cases(sp.Piecewise((1, x > 0), (2, True)), [], variables=[x])
+    by_value = {sp.sympify(case.original_objective): case for case in cases}
+    assert any(relation == sp.Gt(x, 0) for relation in by_value[1].original_constraints)
+    assert any(relation == sp.Le(x, 0) for relation in by_value[2].original_constraints)
+
+
+def test_piecewise_overlapping_conditions_are_made_exclusive():
+    x = sp.symbols("x", real=True)
+    objective = sp.Piecewise((1, x > 0), (2, x > -1), (3, True))
+    cases = algebraize_cases(objective, [], variables=[x])
+    by_value = {sp.sympify(case.original_objective): case for case in cases}
+    second = sp.And(*by_value[2].original_constraints)
+    third = sp.And(*by_value[3].original_constraints)
+    assert sp.simplify_logic(sp.Equivalent(second, sp.And(x <= 0, x > -1))) is sp.S.true
+    assert sp.simplify_logic(sp.Equivalent(third, x <= -1)) is sp.S.true

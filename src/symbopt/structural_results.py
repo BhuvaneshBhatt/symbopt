@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Mapping, Tuple
 
 import sympy as sp
 
@@ -12,7 +12,7 @@ class StructuralGlobalResult:
 
     kind: str
     value: sp.Expr
-    points: Tuple[Mapping[sp.Symbol, sp.Expr], ...] = ()
-    attained: bool = False
+    points: tuple[Mapping[sp.Symbol, sp.Expr], ...] = ()
+    attained: bool | None = False
     certified: bool = True
     metadata: Mapping[str, object] = field(default_factory=dict)

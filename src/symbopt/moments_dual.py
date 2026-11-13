@@ -1,25 +1,31 @@
 from __future__ import annotations
+
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Tuple
+
 import sympy as sp
+
 from .moment import (
+    MomentMatrix,
     MomentRelaxation,
     build_moment_relaxation,
     extract_moment_atoms,
-    MomentMatrix,
 )
 
 
 @dataclass
 class DualMomentResult:
+    """A dual-moment computation with numerical evidence and verification status."""
+
     relaxation: MomentRelaxation
     flat_extension_detected: bool
-    atom_extraction: Optional[object]
-    candidate_points: List[Dict[sp.Symbol, sp.Expr]]
+    atom_extraction: object | None
+    candidate_points: list[dict[sp.Symbol, sp.Expr]]
     verified: bool = False
     message: str = ""
 
     def pretty(self) -> str:
+        """Format the stored mathematical result and diagnostic metadata for inspection."""
         return "\n".join(
             [
                 f"flat_extension_detected: {self.flat_extension_detected}",
@@ -35,7 +41,7 @@ def solve_moment_dual(
     inequalities: Sequence[sp.Expr],
     vars: Sequence[sp.Symbol],
     order: int,
-    moment_values: Optional[Dict[Tuple[int, ...], sp.Expr]] = None,
+    moment_values: dict[tuple[int, ...], sp.Expr] | None = None,
 ) -> DualMomentResult:
     """Solve the implemented dual moment relaxation and return moment/certificate diagnostics."""
     rel = build_moment_relaxation(objective, inequalities, vars, order)

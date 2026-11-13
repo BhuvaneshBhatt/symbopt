@@ -1,0 +1,158 @@
+name: Optional backend matrix
+
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "31 7 * * 2"
+
+jobs:
+  backend-matrix:
+    name: ${{ matrix.backend }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [core, semialg, funcprops, clarabel, scs, scip, full]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install core test environment
+        run: python -m pip install -e ".[test,lint]"
+      - name: Install semialg
+        if: matrix.backend == 'semialg' || matrix.backend == 'full'
+        run: python -m pip install ".[semialg]"
+      - name: Install function analysis
+        if: matrix.backend == 'funcprops' || matrix.backend == 'full'
+        run: python -m pip install ".[funcprops]"
+      - name: Run function-analysis integration
+        if: matrix.backend == 'funcprops' || matrix.backend == 'full'
+        run: >-
+          python -m pytest -q
+          tests/methods/test_component_minimization.py
+          tests/methods/test_curvature_minimum.py
+          tests/methods/test_extrema_bounds.py
+          tests/methods/test_optimization_budgets.py
+          tests/methods/test_univariate_fields.py
+          tests/methods/test_univariate_replay.py
+          tests/methods/structural/test_function_analysis_contract.py
+      - name: Install CVXPY + Clarabel
+        if: matrix.backend == 'clarabel' || matrix.backend == 'full'
+        run: python -m pip install "cvxpy>=1.7" "clarabel>=0.11"
+      - name: Install CVXPY + SCS
+        if: matrix.backend == 'scs' || matrix.backend == 'full'
+        run: python -m pip install "cvxpy>=1.7" "scs>=3.2"
+      - name: Install SCIP
+        if: matrix.backend == 'scip' || matrix.backend == 'full'
+        run: python -m pip install ".[scip]"
+      - name: Report capabilities
+        run: |
+          python - <<'PY'
+          import symbopt
+          print("SCIP:", symbopt.scip_available())
+          print("Arb:", symbopt.arb_available())
+          print("semialg:", symbopt.semialg_available())
+          print("CVXPY:", symbopt.cvxpy_available())
+          print("external SDP solvers:", symbopt.available_external_sdp_solvers())
+          PY
+      - name: Run backend-sensitive tests
+        run: >-
+          python -m pytest -q
+          tests/api/test_planner_decision_matrix.py
+          tests/api/test_result_invariants.py
+          tests/infrastructure/test_input_equivalence_properties.py
+          tests/infrastructure/test_exact_recovery_performance_guards.py
+          tests/methods/test_global_quadratic.py
+          tests/methods/test_certificate_adversarial.py
+          tests/methods/test_critical_cone_regressions.py
+          tests/methods/test_external_sdp_differential.py
+          tests/methods/semialgebraic
+          tests/methods/intervals
+          tests/methods/sdp
+          tests/methods/sos/test_sparse_recovery.py
+          tests/methods/sos/test_semialg_search.py
+      - name: Ruff
+        run: ruff check .
+
+  capability-probes:
+    name: Bounded capability probes
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install -e ".[test]"
+      - name: Run executable capability probes
+        run: python -m pytest -q -m capability_probe tests/reference/test_capability_probes.py
+
+  installed-wheel-smoke:
+    name: Installed wheel + optional backend smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install build
+      - run: python -m build --wheel
+      - run: python -m venv .installed-test
+      - name: Install built wheel and optional backends
+        run: >-
+          .installed-test/bin/python -m pip install
+          dist/*.whl "funcprops>=0.5.0" "semialg>=1.5.0" "cvxpy>=1.7" "clarabel>=0.11" "scs>=3.2"
+      - name: Exercise public installed package
+        run: |
+          .installed-test/bin/python - <<'PY'
+          import sympy as sp
+          import symbopt
+
+          x, y = sp.symbols("x y", real=True)
+          compact = symbopt.minimize((x - 2)**2, variables=x)
+          assert compact == [0, {x: 2}]
+          detailed = symbopt.minimize_result((x - 2)**2, variables=x)
+          assert detailed.certified and detailed.attained
+          assert detailed.method != "unknown"
+          assert symbopt.arb_available()
+          assert symbopt.semialg_available()
+
+          solvers = symbopt.available_external_sdp_solvers()
+          assert "CLARABEL" in solvers or "SCS" in solvers
+          solver = "CLARABEL" if "CLARABEL" in solvers else "SCS"
+          sos = symbopt.sos_decompose(
+              (x+y)**2 + (x-y)**2,
+              [x, y],
+              solver_config=symbopt.SDPSolverConfig(
+                  backend="cvxpy", external_solver=solver, tol=1e-8, max_iter=5000
+              ),
+          )
+          assert sos.certificate is not None and sos.certificate.verified
+          PY
+      - name: Run installed optimization example
+        run: .installed-test/bin/python examples/univariate_extrema.py
+
+  core-wheel:
+    name: Core wheel without optional backends / Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.14"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Build the wheel
+        run: python -m pip wheel --no-deps . --wheel-dir dist
+      - name: Install only core runtime dependencies
+        run: |
+          python -m venv .core-env
+          .core-env/bin/python -m pip install dist/*.whl
+      - name: Verify core import and mathematics
+        run: .core-env/bin/python tests/packaging/core_runtime.py

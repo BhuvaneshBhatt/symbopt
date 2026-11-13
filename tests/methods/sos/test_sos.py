@@ -1,4 +1,5 @@
 import sympy as sp
+
 from symbopt import (
     search_sos_hierarchy,
     sos_decompose,
@@ -110,6 +111,5 @@ def test_scaled_affine_square_uses_exact_certificate():
     result = sos_decompose(36 * (x - 1) ** 2, [x])
     assert result.success
     assert result.sdp_status == "exact_square"
-    assert result.certificate is not None
     assert result.certificate.exact_residual_zero
     assert result.certificate.exact_psd_checks == [True]

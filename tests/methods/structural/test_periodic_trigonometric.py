@@ -1,12 +1,12 @@
 import sympy as sp
 
-from symbopt import minimize
+from symbopt import minimize_result
 
 
 def test_same_frequency_sine_cosine_global_minimum_exact():
     x = sp.symbols("x", real=True)
     objective = 3 * sp.sin(2 * x) + 4 * sp.cos(2 * x) + 1
-    result = minimize(objective, variables=[x], use_sos=False)
+    result = minimize_result(objective, variables=[x], use_sos=False)
     assert result.certified is True
     assert result.optimum_value == -4
     assert result.attained is True
@@ -19,7 +19,7 @@ def test_same_frequency_sine_cosine_global_minimum_exact():
 def test_periodic_trig_respects_closed_interval():
     x = sp.symbols("x", real=True)
     objective = 3 * sp.sin(2 * x) + 4 * sp.cos(2 * x) + 1
-    result = minimize(
+    result = minimize_result(
         objective,
         [sp.Ge(x, 0), sp.Le(x, sp.pi / 2)],
         variables=[x],

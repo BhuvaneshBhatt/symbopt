@@ -1,8 +1,12 @@
 from __future__ import annotations
+
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import List, Optional, Sequence
+
 import sympy as sp
+
+from .semidefinite import SDPSolverConfig
 from .sos import sos_poly_relaxation
 from .sos_program import sparse_monomial_basis
 
@@ -15,19 +19,23 @@ def _cached_basis_plan(poly, vars_tuple, inequalities_tuple, equalities_tuple, d
 
 @dataclass
 class HierarchyStep:
+    """One bounded SOS hierarchy attempt with its relaxation and certification outcome."""
+
     order: int
     ineq_mult_degree: int
     eq_mult_degree: int
     success: bool
-    lower_bound: Optional[sp.Expr]
+    lower_bound: sp.Expr | None
     message: str
 
 
 @dataclass
 class HierarchySearchResult:
-    steps: List[HierarchyStep]
-    best_lower_bound: Optional[sp.Expr]
-    best_result: Optional[object]
+    """Best available SOS bound and diagnostics across the attempted hierarchy orders."""
+
+    steps: list[HierarchyStep]
+    best_lower_bound: sp.Expr | None
+    best_result: object | None
     certified: bool
     message: str
 
@@ -40,6 +48,7 @@ def search_sos_hierarchy(
     search_lo: float = -100.0,
     search_hi: float = 100.0,
     max_order: int = 3,
+    solver_config: SDPSolverConfig | None = None,
 ):
     """Search increasing SOS relaxation orders for a polynomial lower bound.
 
@@ -65,6 +74,7 @@ def search_sos_hierarchy(
             max_iter=10,
             ineq_mult_degree=d,
             eq_mult_degree=d,
+            solver_config=solver_config,
         )
         lb = res.lower_bound
         steps.append(HierarchyStep(d, d, d, bool(res.success), lb, res.message))

@@ -8,14 +8,13 @@ f(x)=(x^2-1)^2.
 
 ```python
 import sympy as sp
-from symbopt import minimize
+from symbopt import minimize_result
 
 x = sp.symbols("x", real=True)
-result = minimize((x**2 - 1)**2)
+result = minimize_result((x**2 - 1) ** 2)
 ```
 
-Candidate generation finds the stationary structure. Polynomial global methods
-can establish the lower bound
+Candidate generation finds the stationary structure. Polynomial global methods can establish the lower bound
 
 \[
 f(x)\ge0,
@@ -32,5 +31,4 @@ result.certified
 result.certificate
 ```
 
-If exact SOS recovery succeeds, the lower bound is a symbolic certificate rather
-than just an approximate SDP observation.
+If exact SOS recovery succeeds, the lower bound is a symbolic certificate rather than just an approximate SDP observation.

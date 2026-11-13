@@ -3,7 +3,7 @@ import sympy as sp
 
 from symbopt import (
     function_range_exact,
-    minimize,
+    minimize_result,
     prove_nonnegative_exact,
     semialg_available,
 )
@@ -27,17 +27,21 @@ def test_live_semialg_backend_when_installed():
     points = solve_exact_points([x**2 - 2], [x])
     assert {sp.simplify(point[x]) for point in points} == {sp.sqrt(2), -sp.sqrt(2)}
 
-    result = minimize(
+    result = minimize_result(
         x**4,
         [sp.Ge(x, 1)],
         max_active_sets=0,
         use_sos=False,
+        options={"structural": {"enabled": False}},
     )
     assert result.certified
-    assert result.best_candidate is not None
     assert result.best_candidate.objective_value == 1
     assert result.best_candidate.original_variable_values[x] == 1
-    assert "semialg" in result.status
+    assert result.status in {
+        "global_certified_by_semialg",
+        "global_certified_by_univariate_range",
+        "global_certified_by_univariate_polynomial",
+    }
 
 
 def test_live_semialg_function_range_when_installed():
@@ -48,7 +52,6 @@ def test_live_semialg_function_range_when_installed():
         [sp.Ge(x, -2), sp.Le(x, 2)],
         [x],
     )
-    assert result is not None
     assert sp.simplify(result.infimum) == 0
     assert sp.simplify(result.supremum - 4) == 0
     assert result.infimum_attained is True
@@ -63,7 +66,6 @@ def test_live_semialg_disconnected_range_when_installed():
         sp.And(sp.Ge(x, 1), sp.Le(x, 2)),
     )
     result = function_range_exact(x, constraints, [x])
-    assert result is not None
     assert sp.simplify(result.infimum + 2) == 0
     assert sp.simplify(result.supremum - 2) == 0
     assert result.infimum_attained is True

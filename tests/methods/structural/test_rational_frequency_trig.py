@@ -1,12 +1,12 @@
 import sympy as sp
 
-from symbopt import minimize
+from symbopt import minimize_result
 
 
 def test_mixed_integer_frequency_trig_is_optimized_exactly():
     x = sp.symbols("x", real=True)
     objective = sp.sin(x) + sp.cos(3 * x)
-    result = minimize(objective, variables=[x])
+    result = minimize_result(objective, variables=[x])
     assert result.certified is True
     assert result.attained is True
     assert result.structural_result.kind == "rational_frequency_trig"
@@ -18,7 +18,7 @@ def test_mixed_integer_frequency_trig_is_optimized_exactly():
 def test_rational_common_frequency_trig_polynomial():
     x = sp.symbols("x", real=True)
     objective = sp.sin(x / 2) + sp.cos(3 * x / 2)
-    result = minimize(objective, variables=[x])
+    result = minimize_result(objective, variables=[x])
     assert result.certified is True
     assert result.structural_result.kind == "rational_frequency_trig"
     assert result.structural_result.metadata["common_frequency"] == "1/2"

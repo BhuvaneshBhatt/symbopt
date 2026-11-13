@@ -1,97 +1,88 @@
-name: Publish to PyPI
-
+name: Publish release
 on:
   release:
     types: [published]
   workflow_dispatch:
-
+    inputs:
+      publish:
+        description: Upload the validated artifacts to PyPI
+        type: boolean
+        default: false
 permissions:
   contents: read
-
 jobs:
   build:
-    name: Build and verify distributions
     runs-on: ubuntu-latest
-
+    timeout-minutes: 120
+    env:
+      MPLBACKEND: Agg
     steps:
-      - name: Check out source
-        uses: actions/checkout@v7
-
-      - name: Set up Python
-        uses: actions/setup-python@v7
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
-          cache: pip
-
-      - name: Install release tools
-        run: python -m pip install --upgrade pip build twine
-
-      - name: Build wheel and source distribution
-        run: python -m build
-
-      - name: Check distribution metadata
-        run: python -m twine check --strict dist/*
-
-      - name: Verify release version matches tag
-        if: github.event_name == 'release'
-        shell: bash
+          python-version: '3.12'
+      - name: Require the tag matching package metadata for publication
+        env:
+          PUBLISH: ${{ inputs.publish }}
         run: |
           python - <<'PY'
-          import os
-          import tomllib
-
-          with open("pyproject.toml", "rb") as stream:
-              version = tomllib.load(stream)["project"]["version"]
-
-          tag = os.environ["GITHUB_REF_NAME"]
-          expected = f"v{version}"
-          if tag != expected:
-              raise SystemExit(
-                  f"Release tag {tag!r} does not match package version {version!r}; "
-                  f"expected {expected!r}."
-              )
+          import os, tomllib
+          from pathlib import Path
+          metadata = tomllib.loads(Path('pyproject.toml').read_text())['project']
+          version = metadata.get('version')
+          if version is None:
+              import runpy
+              version = runpy.run_path('src/probstats/_version.py')['__version__']
+          publishing = os.environ['GITHUB_EVENT_NAME'] == 'release' or os.environ['PUBLISH'] == 'true'
+          if publishing and os.environ['GITHUB_REF'] != 'refs/tags/v' + version:
+              raise RuntimeError('Publish from the tag matching project.version')
           PY
-
-      - name: Smoke-test built wheel
-        shell: bash
+      - name: Install release and integration dependencies
+        run: python -m pip install build twine ruff '.[test,lint,semialg,funcprops]'
+      - name: Lint and format
         run: |
-          python -m venv .wheel-test
-          .wheel-test/bin/python -m pip install --upgrade pip
-          .wheel-test/bin/python -m pip install dist/*.whl
-          .wheel-test/bin/python - <<'PY'
-          import sympy as sp
-          import symbopt
-
-          x = sp.symbols("x", real=True)
-          assert symbopt.minval((x - 2) ** 2, variables=[x]) == 0
-          assert symbopt.argmin((x - 2) ** 2, variables=[x]) == ({x: 2},)
-          assert symbopt.maxval(-(x - 1) ** 2, variables=[x]) == 0
-          PY
-
-      - name: Upload release distributions
-        uses: actions/upload-artifact@v7
+          ruff check --no-cache .
+          ruff format --check --no-cache .
+      - name: Build release artifacts
+        run: python -m build
+      - name: Check metadata and install the candidate wheel
+        run: |
+          python -m twine check --strict dist/*
+          python -m pip install --force-reinstall --no-deps dist/*.whl
+          python -m pip check
+      - name: Verify the candidate and integrations
+        run: |
+          python -m pytest -q -o pythonpath= -m "not unsupported and not capability_probe"
+      - uses: actions/upload-artifact@v6
         with:
-          name: release-dists
-          path: dist/
+          name: release-distributions
+          path: dist/*
           if-no-files-found: error
-          retention-days: 7
-
   publish:
-    name: Publish distributions to PyPI
-    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || inputs.publish
     needs: build
-    environment:
-      name: pypi
-      url: https://pypi.org/p/symbopt
+    runs-on: ubuntu-latest
+    environment: pypi
     permissions:
       id-token: write
-
     steps:
-      - name: Download release distributions
-        uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@v6
         with:
-          name: release-dists
-          path: dist/
-
-      - name: Publish distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+          name: release-distributions
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Verify the indexed version
+        run: |
+          python -m venv verify-index
+          verify-index/bin/python -m pip install symbopt==0.2.0
+          verify-index/bin/python -m pip check
+          verify-index/bin/python -c "import importlib.metadata as m; assert m.version('symbopt') == '0.2.0'"
+          verify-index/bin/python - <<'PY'
+          import sympy as sp
+          import symbopt
+          x = sp.Symbol('x', real=True)
+          assert symbopt.minval((x-2)**2, variables=[x]) == 0
+          PY

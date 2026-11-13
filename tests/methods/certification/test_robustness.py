@@ -1,5 +1,6 @@
 import sympy as sp
 
+from symbopt import minimize_result
 from symbopt.certification import build_certificate, exact_float_scalar
 from symbopt.problem_models import IntervalResult
 
@@ -29,10 +30,9 @@ def test_rigorous_interval_bound_is_not_nsimplified_upward():
 
 
 def test_interval_epsilon_gap_is_not_exact_certification():
-    from symbopt import minimize
 
     x = sp.symbols("x", real=True)
-    result = minimize(
+    result = minimize_result(
         (x - sp.Rational(1, 3)) ** 2,
         [sp.Ge(x, 0), sp.Le(x, 1)],
         use_sos=False,

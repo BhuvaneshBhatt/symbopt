@@ -19,7 +19,7 @@ from symbopt import minimize
 x, y = sp.symbols("x y", real=True)
 
 result = minimize(
-    2*x + y,
+    2 * x + y,
     [
         sp.Ge(x + y, 1),
         sp.Ge(x, 0),
@@ -28,8 +28,7 @@ result = minimize(
 )
 ```
 
-`minimize()` recognizes a linear objective and linear constraints and routes to
-the general LP driver.
+`minimize()` recognizes a linear objective and linear constraints and routes to the general LP driver.
 
 A separate equality example demonstrates that equalities are preserved:
 
@@ -40,5 +39,4 @@ result = minimize(
 )
 ```
 
-The free symbolic variable can take the negative value \(-2\); no artificial
-nonnegativity bound is imposed by the router.
+The free symbolic variable can take the negative value \(-2\); no artificial nonnegativity bound is imposed by the router.

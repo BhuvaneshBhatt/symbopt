@@ -1,7 +1,7 @@
 import pytest
 import sympy as sp
 
-from symbopt import minimize
+from symbopt import minimize_result
 
 pytestmark = pytest.mark.reference
 
@@ -28,13 +28,13 @@ def _assert_point(result, **expected):
 
 
 def _maximize(objective, constraints=None, **kwargs):
-    result = minimize(-objective, constraints or [], **kwargs)
+    result = minimize_result(-objective, constraints or [], **kwargs)
     candidate = _candidate(result)
     return -candidate.objective_value, candidate.original_variable_values
 
 
 def test_sqrt_plus_linear_minimum():
-    result = minimize(
+    result = minimize_result(
         sp.Rational(1, 3) * sp.sqrt(4 + x**2) + sp.Rational(1, 5) * (6 - x),
         use_sos=False,
     )
@@ -43,7 +43,7 @@ def test_sqrt_plus_linear_minimum():
 
 
 def test_sqrt_quadratic_norm_minimum():
-    result = minimize(
+    result = minimize_result(
         sp.sqrt(x**2 + (1 - 2 * x) ** 2),
         use_sos=False,
     )
@@ -52,6 +52,6 @@ def test_sqrt_quadratic_norm_minimum():
 
 
 def test_sqrt_global_minimum():
-    result = minimize(sp.sqrt(x), use_sos=False)
+    result = minimize_result(sp.sqrt(x), use_sos=False)
     _assert_value(result, 0)
     _assert_point(result, x=0)

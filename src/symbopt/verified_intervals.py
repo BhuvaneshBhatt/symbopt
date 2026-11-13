@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 from itertools import product
-from typing import Mapping, Sequence, Tuple
-import math
 
 import sympy as sp
 from sympy.polys.polyerrors import CoercionFailed, PolynomialError
 
 from .numeric_utils import eval_float
+from .precision import finite_midpoint, outward_float
 
 try:
     from flint import arb, ctx
@@ -18,7 +19,7 @@ except ImportError:  # pragma: no cover - exercised when python-flint is absent
     ctx = None
 
 
-Bounds = Tuple[Tuple[float, float], ...]
+Bounds = tuple[tuple[float, float], ...]
 
 
 @dataclass(frozen=True)
@@ -37,13 +38,16 @@ class VerifiedBound:
 
     @property
     def width(self) -> float:
+        """Width of the numerical enclosure, including infinite endpoints."""
         return self.upper - self.lower
 
     @property
     def finite(self) -> bool:
+        """Whether both numerical enclosure endpoints are finite."""
         return math.isfinite(self.lower) and math.isfinite(self.upper)
 
-    def intersect(self, other: "VerifiedBound") -> "VerifiedBound":
+    def intersect(self, other: VerifiedBound) -> VerifiedBound:
+        """Intersect rigorous bounds, preserving available rigorous evidence over a heuristic bound."""
         if not self.rigorous or not other.rigorous:
             return self if self.rigorous else other
         lower = max(self.lower, other.lower)
@@ -162,11 +166,14 @@ def _contains_zero(value) -> bool:
 
 @dataclass(frozen=True)
 class ArbNode:
+    """A compiled expression node evaluated with outward Arb ball arithmetic."""
+
     op: str
     value: object = None
-    children: Tuple["ArbNode", ...] = ()
+    children: tuple[ArbNode, ...] = ()
 
     def evaluate(self, env: Mapping[sp.Symbol, object]):
+        """Evaluate this node on the supplied ball-valued coordinate environment."""
         if self.op == "const":
             return _number_to_arb(self.value)
         if self.op == "pi":
@@ -217,6 +224,7 @@ class ArbNode:
 
 @lru_cache(maxsize=8192)
 def compile_arb(expr: sp.Expr) -> ArbNode:
+    """Compile a supported SymPy expression into the internal Arb evaluator tree."""
     if expr.is_Number:
         return ArbNode("const", expr)
     if expr == sp.pi:
@@ -278,6 +286,7 @@ def compile_arb(expr: sp.Expr) -> ArbNode:
         sp.fresnelc: "fresnel_c",
         sp.fresnels: "fresnel_s",
         sp.sinc: "sinc",
+        sp.li: "li",
     }
     method = unary.get(expr.func)
     if method is not None and len(expr.args) == 1:
@@ -298,6 +307,57 @@ def compile_arb(expr: sp.Expr) -> ArbNode:
     if expr.func is sp.polylog and len(expr.args) == 2:
         order, argument = expr.args
         return ArbNode("method", "polylog", (compile_arb(argument), compile_arb(order)))
+
+    if expr.func is sp.lowergamma and len(expr.args) == 2:
+        order, argument = expr.args
+        return ArbNode(
+            "method", "gamma_lower", (compile_arb(argument), compile_arb(order))
+        )
+    if expr.func is sp.uppergamma and len(expr.args) == 2:
+        order, argument = expr.args
+        return ArbNode(
+            "method", "gamma_upper", (compile_arb(argument), compile_arb(order))
+        )
+
+    orthogonal_methods = {
+        sp.chebyshevt: "chebyshev_t",
+        sp.chebyshevu: "chebyshev_u",
+        sp.hermite: "hermite_h",
+        sp.legendre: "legendre_p",
+    }
+    orthogonal = orthogonal_methods.get(expr.func)
+    if orthogonal is not None and len(expr.args) == 2:
+        degree, argument = expr.args
+        return ArbNode(
+            "method", orthogonal, (compile_arb(argument), compile_arb(degree))
+        )
+
+    if expr.func is sp.assoc_legendre and len(expr.args) == 3:
+        degree, order, argument = expr.args
+        return ArbNode(
+            "method",
+            "legendre_p",
+            (compile_arb(argument), compile_arb(degree), compile_arb(order)),
+        )
+    if expr.func is sp.gegenbauer and len(expr.args) == 3:
+        degree, alpha, argument = expr.args
+        return ArbNode(
+            "method",
+            "gegenbauer_c",
+            (compile_arb(argument), compile_arb(degree), compile_arb(alpha)),
+        )
+    if expr.func is sp.laguerre and len(expr.args) == 2:
+        degree, argument = expr.args
+        return ArbNode(
+            "method", "laguerre_l", (compile_arb(argument), compile_arb(degree))
+        )
+    if expr.func is sp.assoc_laguerre and len(expr.args) == 3:
+        degree, alpha, argument = expr.args
+        return ArbNode(
+            "method",
+            "laguerre_l",
+            (compile_arb(argument), compile_arb(degree), compile_arb(alpha)),
+        )
 
     bessel_methods = {
         sp.besselj: "bessel_j",
@@ -347,7 +407,7 @@ def _eval_arb(expr: sp.Expr, env: Mapping[sp.Symbol, object]):
 
 def _domain_arg_bound(
     expr: sp.Expr,
-    variables: Tuple[sp.Symbol, ...],
+    variables: tuple[sp.Symbol, ...],
     bounds: Bounds,
     precision: int,
 ) -> VerifiedBound:
@@ -371,7 +431,7 @@ def _domain_arg_bound(
 
 def _domain_status(
     expr: sp.Expr,
-    variables: Tuple[sp.Symbol, ...],
+    variables: tuple[sp.Symbol, ...],
     bounds: Bounds,
     precision: int,
 ) -> str:
@@ -468,7 +528,7 @@ def _domain_status(
 
 def _arb_natural_raw(
     expr: sp.Expr,
-    variables: Tuple[sp.Symbol, ...],
+    variables: tuple[sp.Symbol, ...],
     bounds: Bounds,
     precision: int,
 ) -> VerifiedBound:
@@ -484,7 +544,7 @@ def _arb_natural_raw(
         value = _eval_arb(expr, env)
         return _ball_bound(value, "natural")
     except (AttributeError, NotImplementedError, TypeError):
-        # The real domain was already validated symbolically.  Older python-flint
+        # The real domain was already validated symbolically. Some python-flint
         # builds do not expose every special-function method; the whole real line
         # remains a rigorous, if uninformative, enclosure in that case.
         return VerifiedBound(
@@ -510,7 +570,7 @@ def _arb_natural_raw(
 
 def _arb_natural(
     expr: sp.Expr,
-    variables: Tuple[sp.Symbol, ...],
+    variables: tuple[sp.Symbol, ...],
     bounds: Bounds,
     precision: int,
 ) -> VerifiedBound:
@@ -533,27 +593,16 @@ def _bounds_as_rationals(bounds: Bounds):
     )
 
 
-def _rational_outward(value: sp.Rational, direction: int) -> float:
-    numeric = float(value)
-    try:
-        if sp.Rational(*numeric.as_integer_ratio()) == value:
-            return numeric
-    except (TypeError, ValueError, ArithmeticError):
-        pass
-    target = float("-inf") if direction < 0 else float("inf")
-    return math.nextafter(numeric, target)
-
-
 def _bernstein_bound(
     expr: sp.Expr,
-    variables: Tuple[sp.Symbol, ...],
+    variables: tuple[sp.Symbol, ...],
     bounds: Bounds,
 ) -> VerifiedBound | None:
     if expr.is_Rational:
         value = sp.Rational(expr)
         return VerifiedBound(
-            _rational_outward(value, -1),
-            _rational_outward(value, 1),
+            outward_float(value, -1),
+            outward_float(value, 1),
             True,
             "exact-constant",
             "exact-polynomial",
@@ -598,8 +647,8 @@ def _bernstein_bound(
     low = min(coefficients)
     high = max(coefficients)
     return VerifiedBound(
-        _rational_outward(low, -1),
-        _rational_outward(high, 1),
+        outward_float(low, -1),
+        outward_float(high, 1),
         True,
         "bernstein",
         "exact-polynomial",
@@ -618,7 +667,7 @@ def _arb_point_value(expr: sp.Expr, point: Mapping[sp.Symbol, float], precision:
 
 def _taylor_bound(
     expr: sp.Expr,
-    variables: Tuple[sp.Symbol, ...],
+    variables: tuple[sp.Symbol, ...],
     bounds: Bounds,
     precision: int,
 ) -> VerifiedBound | None:
@@ -645,8 +694,8 @@ def _taylor_bound(
             slope = _arb_point_value(derivative, midpoint, precision)
             center += slope * deltas[variable]
 
-        for i, first in enumerate(variables):
-            for j, second in enumerate(variables):
+        for first in variables:
+            for second in variables:
                 derivative = sp.diff(expr, first, second)
                 derivative_bound = _arb_natural(
                     derivative,
@@ -662,7 +711,13 @@ def _taylor_bound(
                 )
                 remainder += arb("1/2") * hessian_ball * deltas[first] * deltas[second]
         return _ball_bound(center + remainder, "taylor2")
-    except Exception:
+    except (
+        TypeError,
+        ValueError,
+        ArithmeticError,
+        PolynomialError,
+        NotImplementedError,
+    ):
         return None
     finally:
         ctx.prec = old_precision
@@ -670,7 +725,7 @@ def _taylor_bound(
 
 def _monotone_bound(
     expr: sp.Expr,
-    variables: Tuple[sp.Symbol, ...],
+    variables: tuple[sp.Symbol, ...],
     bounds: Bounds,
     precision: int,
 ) -> VerifiedBound | None:
@@ -715,13 +770,13 @@ def _monotone_bound(
 
 def _heuristic_bound(
     expr: sp.Expr,
-    variables: Tuple[sp.Symbol, ...],
+    variables: tuple[sp.Symbol, ...],
     bounds: Bounds,
 ) -> VerifiedBound:
     values = []
     choices = []
     for lower, upper in bounds:
-        choices.append((lower, 0.5 * (lower + upper), upper))
+        choices.append((lower, finite_midpoint(lower, upper), upper))
     for point in product(*choices):
         subs = dict(zip(variables, point))
         try:
@@ -756,14 +811,15 @@ def _heuristic_bound(
 @lru_cache(maxsize=32768)
 def enclose_expression(
     expr: sp.Expr,
-    variables: Tuple[sp.Symbol, ...],
+    variables: tuple[sp.Symbol, ...],
     bounds: Bounds,
-    config: EvalConfig = EvalConfig(),
+    config: EvalConfig | None = None,
 ) -> VerifiedBound:
     """Compute a rigorous or explicitly heuristic enclosure of a SymPy expression on a box.
 
     The result records the method, backend, real-domain status, and whether the
     enclosure is mathematically rigorous."""
+    config = config if config is not None else EvalConfig()
     domain = _domain_status(expr, variables, bounds, config.precision)
     if domain == "invalid":
         return VerifiedBound(
@@ -835,6 +891,7 @@ def verify_point(
     point: Mapping[sp.Symbol, float],
     precision: int = 128,
 ) -> bool:
+    """Check feasibility at a proposed point with the verified evaluator and tolerance policy."""
     exact_point = {symbol: _float_rational(value) for symbol, value in point.items()}
     exact_verified = True
     for relation in constraints:
@@ -863,7 +920,7 @@ def verify_point(
         residual = sp.expand(relation.lhs - relation.rhs)
         try:
             value = _arb_point_value(residual, point, precision)
-        except Exception:
+        except (TypeError, ValueError, ArithmeticError, NotImplementedError):
             return False
         low = _exact_arb_float(value.lower(), -1)
         high = _exact_arb_float(value.upper(), 1)
@@ -882,7 +939,6 @@ def verify_point(
         elif relation.func is sp.Lt:
             if high >= 0:
                 return False
-        elif isinstance(relation, sp.Unequality):
-            if low <= 0 <= high:
-                return False
+        elif isinstance(relation, sp.Unequality) and low <= 0 <= high:
+            return False
     return True

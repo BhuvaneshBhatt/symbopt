@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 
 class DiagnosticKind(str, Enum):
@@ -26,9 +25,10 @@ class SolverDiagnostic:
     stage: str
     kind: DiagnosticKind
     message: str
-    exception_type: Optional[str] = None
+    exception_type: str | None = None
 
     def pretty(self) -> str:
+        """Format the stored mathematical result and diagnostic metadata for inspection."""
         detail = f" ({self.exception_type})" if self.exception_type else ""
         return f"{self.kind.value}: {self.solver}/{self.stage}: {self.message}{detail}"
 
@@ -39,7 +39,8 @@ class SolverDiagnostic:
         stage: str,
         kind: DiagnosticKind,
         exc: BaseException,
-    ) -> "SolverDiagnostic":
+    ) -> SolverDiagnostic:
+        """Record a backend exception with its solver, stage and diagnostic category."""
         return cls(
             solver=solver,
             stage=stage,

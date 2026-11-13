@@ -2,10 +2,19 @@ include README.md
 include LICENSE
 include pyproject.toml
 include .readthedocs.yaml
-include validation_results.json
-include validation_summary.csv
 recursive-include docs *.py *.md
 recursive-include notebooks *.ipynb
-recursive-include tests *.py
+recursive-include tests *.py *.json *.txt
 recursive-include .github *.yml
 recursive-include benchmarks *.py *.md *.json
+recursive-include examples *.py
+global-exclude __pycache__ *.py[cod] .DS_Store
+prune build
+prune dist
+prune .pytest_cache
+prune .ruff_cache
+prune .hypothesis
+recursive-include tools *.py
+
+include RELEASE_NOTES.md
+recursive-include ci *.txt *.toml *.json

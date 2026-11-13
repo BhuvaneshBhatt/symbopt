@@ -7,14 +7,16 @@ from symbopt import (
     interval_optimize,
     solve_sdp_dense,
 )
-from symbopt.symbolic_cache import cache_info, clear_symbolic_caches
 from symbopt.intervals import IntervalEvaluator
-from symbopt.verified_intervals import enclose_expression
 from symbopt.moment import monomial_basis as moment_basis
 from symbopt.sos_program import (
     compile_sos_relaxation,
+)
+from symbopt.sos_program import (
     monomial_basis as sos_basis,
 )
+from symbopt.symbolic_cache import cache_info, clear_symbolic_caches
+from symbopt.verified_intervals import enclose_expression
 
 
 def test_shared_monomial_cache():
@@ -36,7 +38,6 @@ def test_moment_matrix_powers():
 def test_sos_direct_rows():
     x = sp.symbols("x", real=True)
     comp = compile_sos_relaxation(x**2 + 1, [x], 1)
-    assert comp.sdp_problem is not None
     assert comp.sdp_problem.constraint_count >= 2
     assert comp.sdp_problem.C_blocks[0].shape == (2, 2)
 

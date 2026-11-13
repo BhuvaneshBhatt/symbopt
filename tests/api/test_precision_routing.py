@@ -1,11 +1,11 @@
 import sympy as sp
 
-from symbopt import minimize
-from symbopt.precision import precision_provenance
+from symbopt import minimize_result
 from symbopt.convex_routing import try_direct_solver
+from symbopt.precision import precision_provenance
 
 
-def test_high_precision_inexact_input_disables_float64_fast_paths():
+def test_inexact_backend_precision():
     x = sp.symbols("x", real=True)
     center = sp.Float("0.123456789012345678901234567890123456789", 50)
     info = precision_provenance((x - center) ** 2, [], working_precision=60)
@@ -13,7 +13,7 @@ def test_high_precision_inexact_input_disables_float64_fast_paths():
     assert info.routing_policy == "preserve_high_precision_inexact"
 
 
-def test_direct_lp_qp_router_declines_high_precision_inexact_input():
+def test_inexact_direct_routing():
     x = sp.symbols("x", real=True)
     center = sp.Float("0.123456789012345678901234567890123456789", 50)
     diagnostics = []
@@ -27,7 +27,7 @@ def test_direct_lp_qp_router_declines_high_precision_inexact_input():
 def test_minimize_records_precision_sensitive_routing_policy():
     x = sp.symbols("x", real=True)
     center = sp.Float("0.123456789012345678901234567890123456789", 50)
-    result = minimize(
+    result = minimize_result(
         (x - center) ** 2,
         variables=[x],
         working_precision=60,
@@ -42,9 +42,9 @@ def test_minimize_records_precision_sensitive_routing_policy():
     assert any(item.stage == "precision_policy" for item in result.diagnostics)
 
 
-def test_exact_high_precision_request_can_still_use_exact_certified_fast_path():
+def test_exact_high_precision_routing():
     x = sp.symbols("x", real=True)
-    result = minimize(
+    result = minimize_result(
         (x - sp.Rational(1, 3)) ** 2, variables=[x], working_precision=100
     )
     assert result.certified is True

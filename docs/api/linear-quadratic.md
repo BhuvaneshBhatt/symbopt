@@ -18,8 +18,25 @@ The advanced standard-form simplex routines are also exported from the package:
 ```{autofunction} symbopt.solve_convex_qp
 ```
 
-The convex-QP routine uses free variables by default and rejects a
-non-positive-semidefinite quadratic form.
+The convex-QP routine uses free variables by default and rejects a non-positive-semidefinite quadratic form.
 
-See {doc}`../methods/linear-programming` and
-{doc}`../methods/quadratic-programming`.
+See {doc}`../methods/linear-programming` and {doc}`../methods/quadratic-programming`.
+
+## Global quadratic programming
+
+See {doc}`../methods/global-quadratics` for exact face search, spatial bounds and optional SCIP.
+
+```{autofunction} symbopt.minimize_quadratic
+```
+
+```{autofunction} symbopt.solve_global_qp
+```
+
+```{autoclass} symbopt.GlobalQuadraticResult
+```
+
+```{autofunction} symbopt.verify_quadratic_certificate
+```
+
+```{autofunction} symbopt.scip_available
+```

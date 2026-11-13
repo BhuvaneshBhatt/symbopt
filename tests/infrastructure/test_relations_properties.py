@@ -1,5 +1,6 @@
 import pytest
 import sympy as sp
+
 from symbopt.relation_checks import normalize_relational
 
 hypothesis = pytest.importorskip("hypothesis")

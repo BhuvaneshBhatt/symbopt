@@ -1,7 +1,9 @@
 from __future__ import annotations
-from typing import Dict, Optional
+
 import math
+
 import sympy as sp
+
 from .algebraic_numbers import exactify, exactify_dict
 from .problem_models import OptimalityCertificate, ProofArtifact
 
@@ -28,13 +30,15 @@ def exact_float_scalar(value):
 
 
 def rationalize_scalar(x, maxsteps: int = 6):
+    """Propose a rational reconstruction without claiming an exact identity with the input."""
     try:
         return sp.nsimplify(x, rational=True)
     except (TypeError, ValueError, ArithmeticError, sp.SympifyError):
         return sp.sympify(x)
 
 
-def rationalize_dict(d: Dict[sp.Symbol, object]) -> Dict[sp.Symbol, sp.Expr]:
+def rationalize_dict(d: dict[sp.Symbol, object]) -> dict[sp.Symbol, sp.Expr]:
+    """Recover rational coordinates from approximate values; this alone proves no feasibility claim."""
     out = {}
     for k, v in d.items():
         try:
@@ -50,7 +54,7 @@ def build_certificate(
     sos_result=None,
     sos_lower_bound=None,
     sos_bound_numeric=None,
-    lp_qp_kind: Optional[str] = None,
+    lp_qp_kind: str | None = None,
     constraints=(),
     sos_rigorous: bool = False,
     direct_metadata=None,
@@ -59,6 +63,7 @@ def build_certificate(
     semialg_sign=None,
     semialg_range=None,
 ):
+    """Assemble one optimality certificate from independently verified evidence."""
     cert = OptimalityCertificate()
     if best_candidate is not None:
         cert.primal_solution = exactify_dict(best_candidate.primal_values)
@@ -232,7 +237,7 @@ def build_certificate(
 
     if cert.lower_bound is not None and cert.upper_bound is not None:
         try:
-            cert.gap = sp.nsimplify(sp.simplify(cert.upper_bound - cert.lower_bound))
+            cert.gap = sp.simplify(cert.upper_bound - cert.lower_bound)
             if cert.gap == 0:
                 cert.status = "proven_optimal"
             else:
@@ -257,8 +262,9 @@ def build_certificate(
 
 
 def verify_lp_qp_certificate(
-    primal_solution: Dict[sp.Symbol, sp.Expr], objective_value, constraints
+    primal_solution: dict[sp.Symbol, sp.Expr], objective_value, constraints
 ):
+    """Report exact primal feasibility checks; this helper alone does not prove optimality."""
     feas = []
     for rel in constraints:
         try:

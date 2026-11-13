@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 import platform
 import statistics
 import sys
 import time
-
-from symbopt import clear_symbolic_caches
+from pathlib import Path
 
 from cases import benchmark_cases
+
+from symbopt import clear_symbolic_caches
 
 
 def _time_case(case, repeats: int, cold_cache: bool):

@@ -1,6 +1,5 @@
-from pathlib import Path
 import re
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
@@ -30,6 +29,8 @@ def test_required_documentation_pages_exist():
         "methods/degeneracy.md",
         "methods/verified-intervals.md",
         "examples/index.md",
+        "guide/how-symbopt-solved-this.md",
+        "api/public-symbols.md",
     ]
     missing = [name for name in required if not (DOCS / name).exists()]
     assert not missing
@@ -56,12 +57,26 @@ def test_readthedocs_and_sphinx_configuration_exist():
     assert (DOCS / "conf.py").exists()
 
 
-def test_stable_public_api_is_documented():
+def test_public_api_documentation_ownership():
     from symbopt.api import __all__ as stable_api
 
-    api_text = "\n".join(page.read_text() for page in (DOCS / "api").glob("*.md"))
-    missing = [name for name in stable_api if f"symbopt.{name}" not in api_text]
-    assert not missing
+    registry = DOCS / "api" / "public-symbols.md"
+    pattern = re.compile(
+        r"^\| `symbopt\.([^`]+)` \| \{doc\}`([^`]+)` \|$", re.MULTILINE
+    )
+    entries = pattern.findall(registry.read_text())
+    registered = [name for name, _owner in entries]
+    assert len(registered) == len(set(registered)), (
+        "duplicate public API registry entries"
+    )
+    assert set(registered) == set(stable_api)
+
+    bad_owners = []
+    for name, owner in entries:
+        page = DOCS / "api" / f"{owner}.md"
+        if not page.exists() or f"symbopt.{name}" not in page.read_text():
+            bad_owners.append((name, owner))
+    assert not bad_owners
 
 
 def test_reference_and_development_pages_exist():
@@ -72,7 +87,6 @@ def test_reference_and_development_pages_exist():
         "reference/references.md",
         "development/architecture.md",
         "development/testing.md",
-        "development/contributing.md",
         "development/documentation.md",
     ]
     missing = [name for name in required if not (DOCS / name).exists()]

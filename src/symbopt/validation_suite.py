@@ -1,19 +1,22 @@
 from __future__ import annotations
-from pathlib import Path
-from typing import Dict
+
 import csv
+from pathlib import Path
+
 import numpy as np
 import sympy as sp
+
+from .chordal import suggest_psd_blocks
+from .lp import solve_lp
+from .moment import build_moment_matrix, extract_moment_atoms
+from .moments_dual import solve_moment_dual
+from .qp import solve_convex_qp
 from .sdp import SDPProblem, solve_sdp_dense
 from .sos import sos_decompose, sos_lower_bound, sos_scalar_relaxation
-from .moment import build_moment_matrix, extract_moment_atoms
-from .chordal import suggest_psd_blocks
-from .moments_dual import solve_moment_dual
-from .lp import solve_lp
-from .qp import solve_convex_qp
 
 
 def run_validation_suite(verbose: bool = False):
+    """Run the independent numerical validation battery and return structured results."""
     out = {}
 
     C = np.eye(2)
@@ -145,11 +148,12 @@ def run_validation_suite(verbose: bool = False):
 
 
 def write_validation_summary(
-    path: str | Path, results: Dict[str, Dict[str, object]]
+    path: str | Path, results: dict[str, dict[str, object]]
 ) -> Path:
+    """Write the numerical validation results as a JSON report."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = sorted({k for row in results.values() for k in row.keys()} | {"name"})
+    fieldnames = sorted({k for row in results.values() for k in row} | {"name"})
     with path.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()

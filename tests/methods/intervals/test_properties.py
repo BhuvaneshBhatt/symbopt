@@ -1,5 +1,6 @@
 import pytest
 import sympy as sp
+
 from symbopt import enclose_expression
 
 hypothesis = pytest.importorskip("hypothesis")

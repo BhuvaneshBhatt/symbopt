@@ -1,20 +1,26 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Optional, Sequence, Tuple
 
 import numpy as np
+from scipy.optimize import minimize as scipy_minimize
 
 from .array_validation import (
     checked_bounds as _checked_bounds,
+)
+from .array_validation import (
     finite_array as _finite_array,
+)
+from .array_validation import (
     matrix_rhs as _matrix_rhs,
 )
-from scipy.optimize import minimize as scipy_minimize
 
 
 @dataclass
 class QPResult:
+    """Numerical quadratic-program status, candidate point, objective and iteration diagnostics."""
+
     status: str
     x: np.ndarray
     objective: float
@@ -30,7 +36,7 @@ def solve_convex_qp(
     A_eq=None,
     b_eq=None,
     x0=None,
-    bounds: Optional[Sequence[Tuple[Optional[float], Optional[float]]]] = None,
+    bounds: Sequence[tuple[float | None, float | None]] | None = None,
     convexity_tol: float = 1e-10,
 ):
     """Solve a convex quadratic program with linear constraints.
@@ -46,6 +52,9 @@ def solve_convex_qp(
     if Q.shape != (size, size):
         raise ValueError("Q must be square with dimension len(c).")
 
+    if not np.isfinite(convexity_tol) or convexity_tol < 0:
+        raise ValueError("convexity_tol must be finite and nonnegative.")
+
     Q = 0.5 * (Q + Q.T)
     eig_min = float(np.linalg.eigvalsh(Q).min()) if size else 0.0
     if eig_min < -convexity_tol:
@@ -56,9 +65,6 @@ def solve_convex_qp(
             0,
             "Q is not positive semidefinite.",
         )
-
-    if not np.isfinite(convexity_tol) or convexity_tol < 0:
-        raise ValueError("convexity_tol must be finite and nonnegative.")
 
     if x0 is None:
         x0 = np.zeros(size, dtype=float)
@@ -97,10 +103,12 @@ def solve_convex_qp(
     scipy_bounds = [(None, None)] * size if checked_bounds is None else checked_bounds
 
     def objective_fn(x):
-        return 0.5 * float(x @ Q @ x) + float(c @ x)
+        with np.errstate(over="ignore", invalid="ignore"):
+            return 0.5 * float(x @ Q @ x) + float(c @ x)
 
     def gradient_fn(x):
-        return Q @ x + c
+        with np.errstate(over="ignore", invalid="ignore"):
+            return Q @ x + c
 
     result = scipy_minimize(
         objective_fn,

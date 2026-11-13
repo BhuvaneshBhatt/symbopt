@@ -1,24 +1,30 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Tuple
 
 import sympy as sp
-from .degeneracy import classify_degenerate
 from sympy.core.relational import Relational
+
+from ._symbols import fresh_symbols
+from .degeneracy import classify_degenerate
 from .relation_checks import normalize_relational
+from .semialgebraic import exact_feasible, prove_nonnegative_exact
 
 
 @dataclass
 class CriticalPointResult:
-    solution: Dict[sp.Symbol, sp.Expr]
+    """A stationary candidate and its local curvature classification and assumptions."""
+
+    solution: dict[sp.Symbol, sp.Expr]
     classification: str
-    lagrangian: Optional[sp.Expr] = None
-    hessian_at_point: Optional[sp.Matrix] = None
-    eigenvalues: Optional[List[sp.Expr]] = None
-    assumptions: Tuple[sp.Expr, ...] = ()
+    lagrangian: sp.Expr | None = None
+    hessian_at_point: sp.Matrix | None = None
+    eigenvalues: list[sp.Expr] | None = None
+    assumptions: tuple[sp.Expr, ...] = ()
 
     def pretty(self) -> str:
+        """Format the stored mathematical result and diagnostic metadata for inspection."""
         lines = [
             f"solution: {self.solution}",
             f"classification: {self.classification}",
@@ -34,7 +40,158 @@ class CriticalPointResult:
         return "\n".join(lines)
 
 
+@dataclass(frozen=True)
+class CriticalConeResult:
+    """Exact second-order sign analysis on a normalized critical cone."""
+
+    classification: str
+    quadratic_form: sp.Expr
+    constraints: tuple[sp.Expr, ...]
+    nonnegative: bool | None
+    nonpositive: bool | None
+    zero_direction_exists: bool | None
+    positive_direction_exists: bool | None
+    negative_direction_exists: bool | None
+
+
+def analyze_critical_cone(
+    objective: sp.Expr,
+    lagrangian: sp.Expr,
+    variables: Sequence[sp.Symbol],
+    solution: dict[sp.Symbol, sp.Expr],
+    equalities: Sequence[sp.Expr],
+    inequalities: Sequence[sp.Expr],
+    multipliers: Sequence[sp.Symbol],
+    assumptions: Sequence[sp.Expr] = (),
+) -> CriticalConeResult:
+    """Analyze the Lagrangian Hessian on the exact critical cone.
+
+    Direction variables are normalized to the unit sphere, converting strict
+    positivity on nonzero critical directions into a compact semialgebraic
+    decision problem.  ``g >= 0`` is the inequality convention.
+    """
+    variables = tuple(variables)
+    directions = tuple(sp.Dummy(f"d{i}", real=True) for i in range(len(variables)))
+    dvec = sp.Matrix(directions)
+    constraints = []
+    cone_inequalities = []
+
+    def dot_gradient(expr):
+        return sp.expand(
+            sum(
+                sp.diff(expr, var).subs(solution) * direction
+                for var, direction in zip(variables, directions)
+            )
+        )
+
+    for equality in equalities:
+        constraints.append(sp.Eq(dot_gradient(equality), 0))
+
+    for inequality, multiplier in zip(inequalities, multipliers):
+        value = _safe_simplify(inequality.subs(solution), assumptions)
+        if not _is_zero(value, assumptions):
+            continue
+        derivative = dot_gradient(inequality)
+        multiplier_value = _safe_simplify(
+            solution.get(multiplier, multiplier), assumptions
+        )
+        if _is_positive(multiplier_value, assumptions):
+            constraints.append(sp.Eq(derivative, 0))
+        else:
+            relation = sp.Ge(derivative, 0)
+            constraints.append(relation)
+            cone_inequalities.append(relation)
+
+    constraints.append(sp.Eq(dot_gradient(objective), 0))
+    constraints.append(sp.Eq(sum(direction**2 for direction in directions), 1))
+    hessian = sp.Matrix(sp.hessian(lagrangian, variables).subs(solution))
+    quadratic = sp.expand((dvec.T * hessian * dvec)[0])
+
+    nonnegative = prove_nonnegative_exact(quadratic, constraints, directions).proven
+    nonpositive = prove_nonnegative_exact(-quadratic, constraints, directions).proven
+    zero_exists = exact_feasible([*constraints, sp.Eq(quadratic, 0)], directions)
+    positive_exists = exact_feasible([*constraints, sp.Gt(quadratic, 0)], directions)
+    negative_exists = exact_feasible([*constraints, sp.Lt(quadratic, 0)], directions)
+
+    # Without semialg, a purely linear-subspace critical cone can still be
+    # classified exactly by reducing the Hessian to its nullspace basis.
+    if (
+        not cone_inequalities
+        and nonnegative is None
+        and nonpositive is None
+        and positive_exists in (None, False)
+        and negative_exists in (None, False)
+    ):
+        rows = []
+        for relation in constraints[:-1]:  # omit sphere normalization
+            if isinstance(relation, sp.Equality):
+                rows.append(
+                    [
+                        sp.expand(relation.lhs - relation.rhs).coeff(d)
+                        for d in directions
+                    ]
+                )
+        jacobian = sp.Matrix(rows) if rows else sp.zeros(0, len(directions))
+        basis_vectors = jacobian.nullspace()
+        if basis_vectors:
+            basis = sp.Matrix.hstack(*basis_vectors)
+            reduced = sp.simplify(basis.T * hessian * basis)
+            try:
+                signs = []
+                for eigenvalue, multiplicity in reduced.eigenvals().items():
+                    sign = sp.sign(sp.simplify(eigenvalue))
+                    signs.extend([sign] * int(multiplicity))
+                if signs and all(sign == 1 for sign in signs):
+                    nonnegative, zero_exists, positive_exists, negative_exists = (
+                        True,
+                        False,
+                        True,
+                        False,
+                    )
+                elif signs and all(sign == -1 for sign in signs):
+                    nonpositive, zero_exists, positive_exists, negative_exists = (
+                        True,
+                        False,
+                        False,
+                        True,
+                    )
+                elif 1 in signs and -1 in signs:
+                    positive_exists, negative_exists = True, True
+                elif signs and all(sign in (0, 1) for sign in signs):
+                    nonnegative, zero_exists = True, 0 in signs
+                elif signs and all(sign in (0, -1) for sign in signs):
+                    nonpositive, zero_exists = True, 0 in signs
+            except (TypeError, ValueError, NotImplementedError):
+                pass
+
+    if nonnegative is True and zero_exists is False:
+        classification = "SecondOrderSufficientMinimum"
+    elif nonpositive is True and zero_exists is False:
+        classification = "SecondOrderSufficientMaximum"
+    elif positive_exists is True and negative_exists is True:
+        classification = "IndefiniteCriticalCone"
+    elif negative_exists is True:
+        classification = "SecondOrderMinimumViolation"
+    elif positive_exists is True and nonnegative is True:
+        classification = "SecondOrderNecessaryMinimum"
+    elif nonnegative is True and nonpositive is True:
+        classification = "FlatCriticalCone"
+    else:
+        classification = "Inconclusive"
+    return CriticalConeResult(
+        classification,
+        quadratic,
+        tuple(constraints),
+        nonnegative,
+        nonpositive,
+        zero_exists,
+        positive_exists,
+        negative_exists,
+    )
+
+
 def normalize_constraints(constraints: Sequence[Relational]):
+    """Normalize equality and inequality residuals using the nonnegative convention."""
     eqs, ineqs_ge, ineqs_gt = [], [], []
     for rel in constraints:
         kind, residual = normalize_relational(rel)
@@ -126,10 +283,11 @@ def _counts_by_sign(values: Sequence[sp.Expr], assumptions: Sequence[sp.Expr]):
 def classify_hessian(
     hessian: sp.Matrix,
     vars: Sequence[sp.Symbol],
-    solution: Dict[sp.Symbol, sp.Expr],
+    solution: dict[sp.Symbol, sp.Expr],
     assumptions: Sequence[sp.Expr] = (),
-    f: Optional[sp.Expr] = None,
+    f: sp.Expr | None = None,
 ):
+    """Classify the exact Hessian sign when symbolic eigenvalue information is sufficient."""
     hpt = sp.Matrix(hessian.subs(solution))
     hpt = sp.Matrix(
         [
@@ -188,7 +346,7 @@ def _critical_points_free(f: sp.Expr, vars: Sequence[sp.Symbol], domain: str = "
 def _classify_constrained(
     lagrangian: sp.Expr,
     vars: Sequence[sp.Symbol],
-    solution: Dict[sp.Symbol, sp.Expr],
+    solution: dict[sp.Symbol, sp.Expr],
     equalities: Sequence[sp.Expr],
     inequalities: Sequence[sp.Expr],
     multipliers: Sequence[sp.Symbol],
@@ -235,6 +393,35 @@ def _classify_constrained(
             tangent_rows.append(gradient)
         else:
             uncertain_active = True
+
+    if uncertain_active:
+        try:
+            cone = analyze_critical_cone(
+                objective,
+                lagrangian,
+                vars,
+                solution,
+                equalities,
+                inequalities,
+                multipliers,
+                assumptions,
+            )
+            if cone.classification == "SecondOrderSufficientMinimum":
+                return "LocalMinimum", hpt, []
+            if cone.classification == "SecondOrderSufficientMaximum":
+                return "LocalMaximum", hpt, []
+            if cone.classification == "IndefiniteCriticalCone":
+                return "SaddlePoint", hpt, []
+            if cone.classification == "SecondOrderMinimumViolation":
+                return "Inconclusive", hpt, []
+        except (
+            ImportError,
+            TypeError,
+            ValueError,
+            ArithmeticError,
+            NotImplementedError,
+        ):
+            pass
 
     if not tangent_rows:
         classification, _, eigenvalues = classify_hessian(
@@ -293,20 +480,33 @@ def _critical_points_constr(
     domain: str = "Reals",
     lambda_prefix: str = "lam",
     mu_prefix: str = "mu",
-    karush_john_multiplier: Optional[str] = None,
+    karush_john_multiplier: str | None = None,
 ):
+    """Construct and solve constrained stationary systems for KKT/Karush--John analysis."""
     vars = list(vars)
     eqs, ineqs_ge, ineqs_gt = normalize_constraints(constraints)
     ineqs = list(ineqs_ge) + list(ineqs_gt)
     strict_assumptions = [sp.Gt(h, 0) for h in ineqs_gt]
 
-    lam = [sp.Symbol(f"{lambda_prefix}_{i + 1}", real=True) for i in range(len(eqs))]
-    mu = [
-        sp.Symbol(f"{mu_prefix}_{j + 1}", real=True, nonnegative=True)
-        for j in range(len(ineqs))
-    ]
+    occupied = f.free_symbols | set(vars)
+    for residual in (*eqs, *ineqs):
+        occupied.update(residual.free_symbols)
+    lam = fresh_symbols(
+        (f"{lambda_prefix}_{i + 1}" for i in range(len(eqs))), occupied, real=True
+    )
+    mu = fresh_symbols(
+        (f"{mu_prefix}_{i + 1}" for i in range(len(ineqs))),
+        (*occupied, *lam),
+        real=True,
+        nonnegative=True,
+    )
     rho = (
-        sp.Symbol(str(karush_john_multiplier), real=True, nonnegative=True)
+        fresh_symbols(
+            (str(karush_john_multiplier),),
+            (*occupied, *lam, *mu),
+            real=True,
+            nonnegative=True,
+        )[0]
         if karush_john_multiplier is not None
         else None
     )
@@ -317,14 +517,14 @@ def _critical_points_constr(
             + sum(mult * residual for mult, residual in zip(lam, eqs))
             - sum(m * h for m, h in zip(mu, ineqs))
         )
-        allvars = [rho] + lam + mu + vars
+        allvars = [rho, *lam, *mu, *vars]
     else:
         L = (
             f
             + sum(mult * residual for mult, residual in zip(lam, eqs))
             - sum(m * h for m, h in zip(mu, ineqs))
         )
-        allvars = lam + mu + vars
+        allvars = [*lam, *mu, *vars]
 
     equations = []
     equations.extend([sp.Eq(sp.expand(sp.diff(L, v)), 0) for v in vars])
@@ -419,7 +619,7 @@ def critical_points(
     domain: str = "Reals",
     lambda_prefix: str = "lam",
     mu_prefix: str = "mu",
-    karush_john_multiplier: Optional[str] = None,
+    karush_john_multiplier: str | None = None,
 ):
     """Compute and classify symbolic critical points.
 
@@ -446,9 +646,10 @@ def critical_points(
 def check_second_order(
     problem,
     vars: Sequence[sp.Symbol],
-    solution: Dict[sp.Symbol, sp.Expr],
+    solution: dict[sp.Symbol, sp.Expr],
     target: str = "Min",
 ) -> bool:
+    """Apply the supported unconstrained or reduced-Hessian local second-order tests."""
     results = critical_points(problem, vars)
     matches = []
     for r in results:
@@ -471,12 +672,13 @@ def check_second_order(
 def check_kkt(
     problem,
     vars: Sequence[sp.Symbol],
-    point_rules: Dict[sp.Symbol, sp.Expr],
+    point_rules: dict[sp.Symbol, sp.Expr],
     domain: str = "Reals",
     lambda_prefix: str = "lam",
     mu_prefix: str = "mu",
-    karush_john_multiplier: Optional[str] = None,
+    karush_john_multiplier: str | None = None,
 ) -> bool:
+    """Check the candidate stationarity, feasibility and multiplier conditions of the KKT system."""
     f, constraints = problem
     critpts = _critical_points_constr(
         f,

@@ -2,7 +2,9 @@ import symbopt
 
 PUBLIC = [
     "minimize",
+    "minimize_local",
     "maximize",
+    "maximize_local",
     "minval",
     "maxval",
     "argmin",
@@ -38,7 +40,7 @@ def test_project_layout_imports():
     assert symbopt.minimize.__name__ == "minimize"
 
 
-def test_root_exports_are_explicit_and_do_not_include_internal_helpers():
+def test_root_export_ownership():
     from symbopt.api import __all__ as public_api
 
     assert symbopt.__all__ == public_api

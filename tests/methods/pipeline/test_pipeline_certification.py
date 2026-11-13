@@ -1,22 +1,22 @@
 import pytest
-
 import sympy as sp
-from symbopt import minimize
-from symbopt.algebraic_numbers import exactify, algebraic_compare
+
+from symbopt import minimize_result
+from symbopt.algebraic_numbers import algebraic_compare, exactify
 
 pytestmark = pytest.mark.integration
 
 
 def test_minimize_lp_route():
     x, y = sp.symbols("x y", real=True)
-    r = minimize(x + y, [sp.Ge(x, 0), sp.Ge(y, 0), sp.Le(x + y, 2)])
+    r = minimize_result(x + y, [sp.Ge(x, 0), sp.Ge(y, 0), sp.Le(x + y, 2)])
     assert r.best_candidate is not None
     assert "lp" in r.status
 
 
 def test_minimize_qp_route():
     x, y = sp.symbols("x y", real=True)
-    r = minimize(
+    r = minimize_result(
         x**2 + y**2 - 2 * x - 4 * y, [sp.Le(x + y, 3), sp.Ge(x, 0), sp.Ge(y, 0)]
     )
     assert r.best_candidate is not None
@@ -25,7 +25,7 @@ def test_minimize_qp_route():
 
 def test_minimize_piecewise():
     x = sp.symbols("x", real=True)
-    r = minimize(
+    r = minimize_result(
         sp.Piecewise((x**2, x >= 0), (-x, True)),
         [sp.Ge(x, -1), sp.Le(x, 1)],
         use_sos=False,
@@ -35,7 +35,7 @@ def test_minimize_piecewise():
 
 def test_minimize_strict_constraint_marks_closure_or_strict():
     x = sp.symbols("x", real=True)
-    r = minimize(x**2, [sp.Gt(x, 0), sp.Le(x, 1)], use_sos=False)
+    r = minimize_result(x**2, [sp.Gt(x, 0), sp.Le(x, 1)], use_sos=False)
     assert (
         "strict" in r.status
         or "closure" in r.status
@@ -46,8 +46,7 @@ def test_minimize_strict_constraint_marks_closure_or_strict():
 
 def test_certificate_contains_proof_objects():
     x = sp.symbols("x", real=True)
-    r = minimize((x - 1) ** 2, [sp.Ge(x, 0), sp.Le(x, 2)])
-    assert r.certificate is not None
+    r = minimize_result((x - 1) ** 2, [sp.Ge(x, 0), sp.Le(x, 2)])
     assert len(r.certificate.proof_objects) >= 1
 
 
@@ -61,22 +60,20 @@ def test_algebraic_compare():
 
 def test_minimize_qp_free_variable_regression():
     x = sp.symbols("x", real=True)
-    r = minimize((x + 2) ** 2, [])
-    assert r.best_candidate is not None
+    r = minimize_result((x + 2) ** 2, [])
     assert sp.simplify(r.best_candidate.primal_values[x] + 2) == 0
     assert sp.simplify(r.best_candidate.objective_value) == 0
 
 
 def test_minimize_lp_equality_regression():
     x = sp.symbols("x", real=True)
-    r = minimize(x, [sp.Eq(x, 2)])
-    assert r.best_candidate is not None
+    r = minimize_result(x, [sp.Eq(x, 2)])
     assert sp.simplify(r.best_candidate.primal_values[x] - 2) == 0
 
 
 def test_direct_certificate_checks_constraints():
     x = sp.symbols("x", real=True)
-    r = minimize((x - 1) ** 2, [sp.Ge(x, 0), sp.Le(x, 2)])
+    r = minimize_result((x - 1) ** 2, [sp.Ge(x, 0), sp.Le(x, 2)])
     direct = [p for p in r.certificate.proof_objects if p.kind in {"lp", "qp"}]
     assert direct
     checks = direct[0].payload["feasibility_check"]
@@ -84,7 +81,7 @@ def test_direct_certificate_checks_constraints():
     assert all(ok is True for _, ok in checks)
 
 
-def test_approximate_sos_bound_is_not_used_as_rigorous_lower_bound():
+def test_approximate_sos_status():
     from symbopt.certification import build_certificate
 
     cert = build_certificate(

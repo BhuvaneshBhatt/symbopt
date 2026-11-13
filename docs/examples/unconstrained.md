@@ -8,12 +8,12 @@ f(x)=x^4-2x^2.
 
 ```python
 import sympy as sp
-from symbopt import minimize, critical_points
+from symbopt import minimize_result, critical_points
 
 x = sp.symbols("x", real=True)
 
-points = critical_points(x**4 - 2*x**2, [x])
-result = minimize(x**4 - 2*x**2)
+points = critical_points(x**4 - 2 * x**2, [x])
+result = minimize_result(x**4 - 2 * x**2)
 ```
 
 The stationary equation is
@@ -22,8 +22,7 @@ The stationary equation is
 4x^3-4x=0,
 \]
 
-so \(x\in\{-1,0,1\}\). The points \(\pm1\) are minima with value \(-1\);
-\(x=0\) is a local maximum.
+so \(x\in\{-1,0,1\}\). The points \(\pm1\) are minima with value \(-1\); \(x=0\) is a local maximum.
 
 Inspect:
 

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import sympy as sp
-from sympy.calculus.util import continuous_domain
 
 from .structural_results import StructuralGlobalResult
-from .univariate_analysis import _range_result, _univariate_domain
+from .univariate_analysis import _range_result, analyze_univariate
 
 
 def _domain_components(domain):
@@ -25,7 +24,7 @@ def _domain_components(domain):
     return ()
 
 
-def _boundary_values(objective, variable, component):
+def _boundary_values(objective, variable, component, analysis=None):
     values = []
     if isinstance(component, sp.FiniteSet):
         for point in component:
@@ -47,14 +46,28 @@ def _boundary_values(objective, variable, component):
     ):
         try:
             if endpoint is -sp.oo:
-                value = sp.simplify(sp.limit(objective, variable, -sp.oo))
+                value = (
+                    analysis.endpoint_value(-sp.oo)
+                    if analysis is not None
+                    else sp.simplify(sp.limit(objective, variable, -sp.oo))
+                )
             elif endpoint is sp.oo:
-                value = sp.simplify(sp.limit(objective, variable, sp.oo))
+                value = (
+                    analysis.endpoint_value(sp.oo)
+                    if analysis is not None
+                    else sp.simplify(sp.limit(objective, variable, sp.oo))
+                )
             elif closed:
                 value = sp.simplify(objective.subs(variable, endpoint))
             else:
-                value = sp.simplify(
-                    sp.limit(objective, variable, endpoint, dir=direction)
+                value = (
+                    analysis.endpoint_value(
+                        endpoint, direction=direction, attained=False
+                    )
+                    if analysis is not None
+                    else sp.simplify(
+                        sp.limit(objective, variable, endpoint, dir=direction)
+                    )
                 )
         except (NotImplementedError, ValueError, TypeError, RecursionError):
             continue
@@ -64,7 +77,9 @@ def _boundary_values(objective, variable, component):
     return values
 
 
-def _stationary_points(objective, variable, component):
+def _stationary_points(objective, variable, component, analysis=None):
+    if analysis is not None and component == analysis.feasible_domain:
+        return analysis.stationary_points
     try:
         roots = sp.solveset(
             sp.Eq(sp.diff(objective, variable), 0), variable, domain=component
@@ -78,13 +93,13 @@ def _stationary_points(objective, variable, component):
     return None
 
 
-def try_transcendental(objective, constraints, variables):
+def try_transcendental(objective, constraints, variables, analysis=None):
     """Certify common univariate transcendental extrema from real-domain geometry.
 
     This route explicitly intersects user constraints with SymPy's real
     continuous domain, records singularities/poles, detects one-sided unbounded
     limits, and uses exact convexity plus exhaustive stationary points on each
-    interval component.  It deliberately declines nonconvex finite problems.
+    interval component.  It declines nonconvex finite problems.
     """
     variables = tuple(variables)
     if len(variables) != 1:
@@ -92,13 +107,12 @@ def try_transcendental(objective, constraints, variables):
     variable = variables[0]
     if not (objective.has(sp.exp, sp.log) or sp.fraction(sp.cancel(objective))[1] != 1):
         return None
-    requested = _univariate_domain(constraints, variable)
-    if requested is None:
+    analysis = analysis or analyze_univariate(objective, constraints, variable)
+    if analysis is None:
         return None
-    try:
-        natural = continuous_domain(objective, variable, sp.S.Reals)
-        domain = sp.Intersection(requested, natural)
-    except (NotImplementedError, ValueError, TypeError, RecursionError):
+    natural = analysis.natural_domain
+    domain = analysis.feasible_domain
+    if natural is None or domain is None:
         return None
     if domain is sp.S.EmptySet:
         return None
@@ -106,17 +120,14 @@ def try_transcendental(objective, constraints, variables):
     if not components:
         return None
 
-    try:
-        from sympy.calculus.singularities import singularities
-
-        poles = singularities(objective, variable, domain=sp.S.Reals)
-    except (NotImplementedError, ValueError, TypeError):
+    poles = analysis.singularity_set
+    if poles is None:
         poles = sp.S.EmptySet
 
     entries = []
     convex_components = []
     for component in components:
-        entries.extend(_boundary_values(objective, variable, component))
+        entries.extend(_boundary_values(objective, variable, component, analysis))
         if isinstance(component, sp.FiniteSet):
             convex_components.append(True)
             continue
@@ -133,7 +144,8 @@ def try_transcendental(objective, constraints, variables):
                     "domain": sp.sstr(domain),
                     "natural_domain": sp.sstr(natural),
                     "singularities": sp.sstr(poles),
-                    "analysis": "one-sided/domain limit proves unbounded below",
+                    "analysis": "shared univariate endpoint analysis proves unbounded below",
+                    "providers": analysis.provider_summary,
                 },
             )
         try:
@@ -145,7 +157,7 @@ def try_transcendental(objective, constraints, variables):
         convex_components.append(convex)
         if not convex:
             return None
-        roots = _stationary_points(objective, variable, component)
+        roots = _stationary_points(objective, variable, component, analysis)
         if roots is None:
             return None
         for root in roots:
@@ -199,13 +211,14 @@ def try_transcendental(objective, constraints, variables):
             "natural_domain": sp.sstr(natural),
             "singularities": sp.sstr(poles),
             "convex_components": tuple(convex_components),
-            "analysis": "continuous-domain + singularity limits + exact convexity/stationarity",
+            "analysis": "shared univariate domain/partition + exact convexity/stationarity",
+            "providers": analysis.provider_summary,
         },
     )
 
 
 def _common_asymptotic_form(objective, variable) -> bool:
-    numerator, denominator = sp.fraction(sp.cancel(objective))
+    _numerator, denominator = sp.fraction(sp.cancel(objective))
     rational = denominator != 1 and denominator.has(variable)
     radical = any(
         isinstance(node, sp.Pow)
@@ -217,7 +230,7 @@ def _common_asymptotic_form(objective, variable) -> bool:
     return bool(rational or objective.has(sp.log, sp.exp) or radical)
 
 
-def try_asymptotic_solver(objective, constraints, variables):
+def try_asymptotic_solver(objective, constraints, variables, analysis=None):
     """Exact range/asymptotic analysis for common univariate elementary forms."""
     variables = tuple(variables)
     if len(variables) != 1:
@@ -225,9 +238,13 @@ def try_asymptotic_solver(objective, constraints, variables):
     variable = variables[0]
     if not _common_asymptotic_form(objective, variable):
         return None
-    domain = _univariate_domain(constraints, variable)
-    if domain is None:
+    analysis = analysis or analyze_univariate(objective, constraints, variable)
+    if analysis is None:
         return None
     return _range_result(
-        "univariate_asymptotic", objective, constraints, variable, domain
+        "univariate_asymptotic",
+        objective,
+        constraints,
+        variable,
+        analysis=analysis,
     )

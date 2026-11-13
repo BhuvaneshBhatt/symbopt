@@ -1,7 +1,7 @@
 import pytest
 import sympy as sp
 
-from symbopt import minimize
+from symbopt import minimize_result
 
 pytestmark = pytest.mark.reference
 
@@ -28,13 +28,13 @@ def _assert_point(result, **expected):
 
 
 def _maximize(objective, constraints=None, **kwargs):
-    result = minimize(-objective, constraints or [], **kwargs)
+    result = minimize_result(-objective, constraints or [], **kwargs)
     candidate = _candidate(result)
     return -candidate.objective_value, candidate.original_variable_values
 
 
 def test_exact_rational_objective_minimum():
-    result = minimize(
+    result = minimize_result(
         5280 * v / (12 + sp.Rational(1, 40) * v**2),
         use_sos=False,
     )
@@ -43,7 +43,7 @@ def test_exact_rational_objective_minimum():
 
 
 def test_rational_disk_minimum():
-    result = minimize(
+    result = minimize_result(
         (3 * x + y**2) / (1 + x**2),
         [sp.Le(x**2 + y**2, 3)],
         use_sos=False,

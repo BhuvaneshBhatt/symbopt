@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import List, Sequence
 
 import sympy as sp
 from sympy.core.relational import Relational
@@ -9,6 +9,8 @@ from sympy.core.relational import Relational
 
 @dataclass
 class ReductionReport:
+    """Reduced constraints, substitutions and the evidence used by preprocessing."""
+
     duplicate_rels: int = 0
     trivial_rels: int = 0
     unused_aux: int = 0
@@ -16,6 +18,7 @@ class ReductionReport:
 
     @property
     def changed(self) -> bool:
+        """Whether preprocessing recorded any supported structural change."""
         return any(
             [
                 self.duplicate_rels,
@@ -26,30 +29,34 @@ class ReductionReport:
         )
 
 
-def _relation_key(rel: Relational) -> str:
-    return sp.srepr(rel)
-
-
 def reduce_relations(relations: Sequence[Relational]):
-    out: List[Relational] = []
+    """Simplify and deduplicate relations, retaining exact contradictions."""
+    return _reduce_relations(relations, {})
+
+
+def _reduce_relations(relations, simplified):
+    """Reuse simplification results across constraint groups while counting each occurrence."""
+    out: list[Relational] = []
     seen = set()
     duplicates = 0
     trivial = 0
     for rel in relations:
-        try:
-            simp = sp.simplify(rel)
-        except (TypeError, ValueError, ArithmeticError, NotImplementedError):
-            simp = rel
+        if rel not in simplified:
+            try:
+                simplified[rel] = sp.simplify(rel)
+            except (TypeError, ValueError, ArithmeticError, NotImplementedError):
+                simplified[rel] = rel
+        simp = simplified[rel]
         if simp is sp.S.true or simp is True:
             trivial += 1
             continue
-        # Preserve a false relation so downstream feasibility checks can detect an inconsistent problem.
+        # Keep the false relation because it is the exact infeasibility witness
+        # consumed by downstream feasibility checks.
         rel2 = rel if simp is sp.S.false or simp is False else simp
-        key = _relation_key(rel2)
-        if key in seen:
+        if rel2 in seen:
             duplicates += 1
             continue
-        seen.add(key)
+        seen.add(rel2)
         out.append(rel2)
     return out, duplicates, trivial
 
@@ -73,41 +80,46 @@ def reduce_lifted_problem(problem):
         ("graph_inequalities", problem.graph_inequalities),
     ]
     reduced = {}
+    simplified = {}
     for name, values in fields:
-        items, dup, triv = reduce_relations(list(values))
+        items, dup, triv = _reduce_relations(values, simplified)
         reduced[name] = items
         report.duplicate_rels += dup
         report.trivial_rels += triv
 
-    problem.lifted_constraints = reduced["lifted_constraints"]
-    problem.defining_equalities = reduced["defining_equalities"]
-    problem.branch_inequalities = reduced["branch_inequalities"]
-    problem.strict_inequalities = reduced["strict_inequalities"]
-    problem.graph_equalities = reduced["graph_equalities"]
-    problem.graph_inequalities = reduced["graph_inequalities"]
-
     used = set(problem.lifted_objective.free_symbols)
-    for rel in problem.all_constraints():
-        used.update(getattr(rel, "free_symbols", set()))
+    for name, _ in fields:
+        for rel in reduced[name]:
+            used.update(getattr(rel, "free_symbols", set()))
 
     original_aux = list(problem.auxiliary_variables)
-    problem.auxiliary_variables = [a for a in original_aux if a in used]
-    report.unused_aux = len(original_aux) - len(problem.auxiliary_variables)
+    original_aux_set = set(original_aux)
+    auxiliary_variables = [aux for aux in original_aux if aux in used]
+    retained_aux = set(auxiliary_variables)
+    report.unused_aux = len(original_aux) - len(auxiliary_variables)
 
-    original_vars = [v for v in problem.all_variables if v not in set(original_aux)]
-    problem.all_variables = original_vars + list(problem.auxiliary_variables)
+    original_vars = [
+        var for var in problem.all_variables if var not in original_aux_set
+    ]
+    all_variables = original_vars + auxiliary_variables
 
     seen_records = set()
     new_records = []
     for rec in problem.lift_records:
-        key = (rec.aux, sp.srepr(rec.original_expr), rec.kind)
+        key = (rec.aux, rec.original_expr, rec.kind)
         if key in seen_records:
             report.duplicate_lifts += 1
             continue
         seen_records.add(key)
-        if rec.aux in problem.auxiliary_variables:
+        if rec.aux in retained_aux:
             new_records.append(rec)
-    problem.lift_records = new_records
+
+    problem.update_structure(
+        **reduced,
+        auxiliary_variables=auxiliary_variables,
+        all_variables=all_variables,
+        lift_records=new_records,
+    )
 
     if report.changed:
         problem.preprocessing_notes.append(
@@ -117,6 +129,4 @@ def reduce_lifted_problem(problem):
             f"unused_aux={report.unused_aux}, "
             f"duplicate_lift_records={report.duplicate_lifts}"
         )
-    if hasattr(problem, "refresh_metadata"):
-        problem.refresh_metadata()
     return problem, report

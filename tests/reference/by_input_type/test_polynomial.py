@@ -1,7 +1,7 @@
 import pytest
 import sympy as sp
 
-from symbopt import minimize
+from symbopt import minimize_result
 
 pytestmark = pytest.mark.reference
 
@@ -28,13 +28,13 @@ def _assert_point(result, **expected):
 
 
 def _maximize(objective, constraints=None, **kwargs):
-    result = minimize(-objective, constraints or [], **kwargs)
+    result = minimize_result(-objective, constraints or [], **kwargs)
     candidate = _candidate(result)
     return -candidate.objective_value, candidate.original_variable_values
 
 
 def test_quartic_ball_exact_minimum():
-    result = minimize(
+    result = minimize_result(
         x**2 - y**3,
         [sp.Le(x**4 + y**4, 3)],
         use_sos=False,
@@ -44,7 +44,7 @@ def test_quartic_ball_exact_minimum():
 
 
 def test_quartic_ball_corrected_constraint_regression():
-    result = minimize(
+    result = minimize_result(
         x**2 - y**3,
         [sp.Le(x**4 + y**4, 3)],
         use_sos=False,
@@ -54,14 +54,14 @@ def test_quartic_ball_corrected_constraint_regression():
 
 
 def test_unconstrained_two_variable_quadratic():
-    result = minimize(x**2 - 3 * x + y**2 + 3 * y + 3, use_sos=False)
+    result = minimize_result(x**2 - 3 * x + y**2 + 3 * y + 3, use_sos=False)
     _assert_value(result, -sp.Rational(3, 2))
     _assert_point(result, x=sp.Rational(3, 2), y=-sp.Rational(3, 2))
 
 
 def test_unused_variable_mathematical_core():
     # symbopt infers variables; unused z,t are not part of the optimization model.
-    result = minimize(x**2 - 3 * x + y**2 + 3 * y + 3, use_sos=False)
+    result = minimize_result(x**2 - 3 * x + y**2 + 3 * y + 3, use_sos=False)
     _assert_value(result, -sp.Rational(3, 2))
     _assert_point(result, x=sp.Rational(3, 2), y=-sp.Rational(3, 2))
 
@@ -73,14 +73,14 @@ def test_concave_quadratic_maximum_via_negation():
 
 
 def test_quartic_double_well_minimum():
-    result = minimize(x**4 - x**2, use_sos=False)
+    result = minimize_result(x**4 - x**2, use_sos=False)
     _assert_value(result, -sp.Rational(1, 4))
     point = _candidate(result).original_variable_values[x]
     assert sp.simplify(point**2 - sp.Rational(1, 2)) == 0
 
 
 def test_equality_plus_strict_ball_quadratic():
-    result = minimize(
+    result = minimize_result(
         x**2 + 3 * y**2,
         [sp.Eq(x + y, 1), sp.Lt(x**2 + y**2, 3)],
         use_sos=False,
@@ -90,6 +90,6 @@ def test_equality_plus_strict_ball_quadratic():
 
 
 def test_linear_objective_quadratic_constraint():
-    result = minimize(x, [sp.Le(x**2, 3)], use_sos=False)
+    result = minimize_result(x, [sp.Le(x**2, 3)], use_sos=False)
     _assert_value(result, -sp.sqrt(3))
     _assert_point(result, x=-sp.sqrt(3))

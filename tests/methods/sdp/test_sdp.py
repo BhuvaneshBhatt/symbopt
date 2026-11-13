@@ -1,4 +1,5 @@
 import numpy as np
+
 from symbopt import (
     SDPProblem,
     SDPSolverConfig,
@@ -94,7 +95,7 @@ def test_overlapping_chordal_sdp_adds_separator_equalities():
     assert np.isclose(np.trace(consistency[0]) + np.trace(consistency[1]), 0.0)
 
 
-def test_overlapping_chordal_solver_reconstructs_original_shape_and_objective():
+def test_chordal_reconstruction():
     from symbopt import solve_sdp_sparse_chordal
 
     C = np.eye(3)

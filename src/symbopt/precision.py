@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from typing import Iterable, Optional
 import math
+from collections.abc import Iterable
+from dataclasses import asdict, dataclass
 
 import sympy as sp
 from sympy.core.evalf import prec_to_dps
@@ -10,16 +10,19 @@ from sympy.core.evalf import prec_to_dps
 
 @dataclass(frozen=True)
 class PrecisionProvenance:
-    requested_precision: Optional[int]
+    """Requested/input precision and the resulting numerical-backend routing policy."""
+
+    requested_precision: int | None
     effective_precision: int
-    min_input_precision: Optional[int]
-    max_input_precision: Optional[int]
+    min_input_precision: int | None
+    max_input_precision: int | None
     contains_inexact_input: bool
     float64_backends_allowed: bool = True
     routing_policy: str = "standard"
     notes: tuple[str, ...] = ()
 
     def as_dict(self):
+        """Return the stored capability or precision metadata as a dictionary."""
         return asdict(self)
 
 
@@ -70,7 +73,7 @@ def precision_provenance(objective, constraints, working_precision=None):
 
 def decimal_digits_to_bits(digits: int) -> int:
     """Return a conservative binary precision for a decimal-digit request."""
-    return max(2, int(math.ceil(int(digits) * math.log2(10))) + 8)
+    return max(2, math.ceil(int(digits) * math.log2(10)) + 8)
 
 
 def float64_backends_allowed(objective, constraints, working_precision=None) -> bool:
@@ -78,3 +81,41 @@ def float64_backends_allowed(objective, constraints, working_precision=None) -> 
     return precision_provenance(
         objective, constraints, working_precision
     ).float64_backends_allowed
+
+
+def outward_float(value, direction):
+    """Enclose an exact finite endpoint by a binary float on the requested side.
+
+    Existing floats already define binary endpoints and stay unchanged. Exact
+    endpoints are compared after conversion so an interval can never shrink
+    because its rational or algebraic boundary rounds inward.
+    """
+    if isinstance(value, float):
+        return value
+    exact = sp.sympify(value)
+    numeric = float(exact)
+    if not math.isfinite(numeric):
+        raise ValueError("interval endpoints must fit finite floating-point bounds")
+    if isinstance(exact, sp.Rational):
+        # Cross-multiplication compares the binary float with the exact rational
+        # without constructing and simplifying another symbolic difference.
+        numerator, denominator = numeric.as_integer_ratio()
+        if direction * (numerator * exact.q - exact.p * denominator) < 0:
+            return math.nextafter(numeric, -math.inf if direction < 0 else math.inf)
+        return numeric
+    for _ in range(3):
+        delta = direction * (sp.Rational(numeric) - exact)
+        if delta.is_nonnegative is True:
+            return numeric
+        numeric = math.nextafter(numeric, -math.inf if direction < 0 else math.inf)
+    raise ValueError("could not enclose the exact interval endpoint")
+
+
+def finite_midpoint(lower, upper):
+    """Return a float midpoint of finite endpoints without overflow.
+
+    Halving the endpoints separately is needed only when their sum overflows;
+    using it for small endpoints could lose subnormal values.
+    """
+    total = lower + upper
+    return 0.5 * total if math.isfinite(total) else 0.5 * lower + 0.5 * upper

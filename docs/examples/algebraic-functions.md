@@ -28,5 +28,4 @@ result = minimize(
 )
 ```
 
-The lift introduces an auxiliary variable representing the square root together
-with the polynomial graph equation and correct real-branch condition.
+The lift introduces an auxiliary variable representing the square root together with the polynomial graph equation and correct real-branch condition.

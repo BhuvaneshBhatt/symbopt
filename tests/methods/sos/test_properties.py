@@ -3,7 +3,6 @@ import sympy as sp
 
 from symbopt import sos_decompose
 
-
 pytestmark = pytest.mark.property
 
 
@@ -16,6 +15,5 @@ def test_affine_square_is_sos(a, b):
     result = sos_decompose(poly, [x])
 
     assert result.success
-    assert result.certificate is not None
     assert result.certificate.exact_residual_zero
     assert all(check is True for check in result.certificate.exact_psd_checks)

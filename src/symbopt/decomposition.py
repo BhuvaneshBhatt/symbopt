@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Sequence, Tuple
+from collections.abc import Sequence
+from dataclasses import dataclass, field
 
 import sympy as sp
 from sympy.core.relational import Relational
@@ -9,15 +9,19 @@ from sympy.core.relational import Relational
 
 @dataclass(frozen=True)
 class SeparableComponent:
-    variables: Tuple[sp.Symbol, ...]
+    """One objective component with the decision variables and constraints that belong to it."""
+
+    variables: tuple[sp.Symbol, ...]
     objective: sp.Expr
-    constraints: Tuple[Relational, ...]
+    constraints: tuple[Relational, ...]
 
 
 @dataclass(frozen=True)
 class SeparableDecomposition:
-    components: Tuple[SeparableComponent, ...]
-    constant: sp.Expr = sp.Integer(0)
+    """Independent objective components whose certified extrema can be combined."""
+
+    components: tuple[SeparableComponent, ...]
+    constant: sp.Expr = field(default_factory=lambda: sp.Integer(0))
 
 
 def find_components(
@@ -50,7 +54,7 @@ def find_components(
         used = relation.free_symbols.intersection(varset)
         if not used:
             # Parameter-only/global logical conditions need separate semantics;
-            # leave them to the ordinary pipeline for now.
+            # leave them to the ordinary pipeline.
             return None
         connect(used)
 

@@ -17,6 +17,25 @@ def test_revised_simplex_optimal():
         b_ub=np.array([3.0, 2.0]),
     )
     assert r.status == "optimal"
+    assert r.objective == pytest.approx(-5)
+    assert r.x == pytest.approx([2, 1])
+
+
+@pytest.mark.parametrize("solver", [simplex, revised_simplex])
+def test_slack_reentry(solver):
+    # The first binding row becomes inactive at the optimum. Its slack must
+    # re-enter the basis after the other original variable has entered.
+    result = solver([-4, 0], [[2, -4], [3, -1], [0, 1]], [2, 5, 6])
+    assert result.status == "optimal"
+    assert result.x == pytest.approx([11 / 3, 6])
+    assert result.objective == pytest.approx(-44 / 3)
+
+
+@pytest.mark.parametrize("solver", [simplex, revised_simplex])
+def test_unbounded_value(solver):
+    result = solver([-1], [[-1]], [0])
+    assert result.status == "unbounded"
+    assert result.objective == -np.inf
 
 
 def test_solve_lp_maximize():

@@ -1,7 +1,7 @@
 import numpy as np
 import sympy as sp
 
-from symbopt import algebraize
+from symbopt import algebraize, minimize_result
 from symbopt.candidates import build_active_set_plan
 from symbopt.intervals import EvalConfig, _compile_constraints
 from symbopt.sdp import SDPProblem, _build_workspace, _penalty_value_gradient
@@ -99,10 +99,9 @@ def test_metadata_refresh_updates_structure_after_rewrite():
 
 
 def test_direct_global_route_does_not_construct_kkt_model():
-    from symbopt import minimize
 
     x = sp.symbols("x", real=True)
-    result = minimize((x - 2) ** 2, use_sos=False)
+    result = minimize_result((x - 2) ** 2, use_sos=False)
     assert result.certified
     assert result.kkt_system is None
 
@@ -120,7 +119,6 @@ def test_kkt_stage_builds_model_when_candidate_search_needs_it():
         [],
         candidates,
     )
-    assert kkt is not None
     assert kkt.primal_variables == [x]
 
 

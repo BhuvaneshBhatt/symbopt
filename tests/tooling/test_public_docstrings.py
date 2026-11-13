@@ -29,3 +29,25 @@ def test_core_result_types_have_docstrings():
         if len((getattr(symbopt, name).__doc__ or "").strip()) < 40
     ]
     assert not missing
+
+
+def test_public_members_have_docstrings():
+    import ast
+    from pathlib import Path
+
+    missing = []
+    for path in (Path(__file__).resolve().parents[2] / "src/symbopt").rglob("*.py"):
+        tree = ast.parse(path.read_text())
+        scopes = [
+            tree,
+            *[node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)],
+        ]
+        for scope in scopes:
+            for node in scope.body:
+                if (
+                    isinstance(node, (ast.FunctionDef, ast.ClassDef))
+                    and not node.name.startswith("_")
+                    and not ast.get_docstring(node)
+                ):
+                    missing.append((path.name, node.name))
+    assert missing == []

@@ -29,8 +29,6 @@ The constrained stationary point is
 x=y=\frac12.
 \]
 
-The tangent space to \(x+y=1\) is one-dimensional. The reduced Hessian is
-positive, so the point is a constrained local minimum.
+The tangent space to \(x+y=1\) is one-dimensional. The reduced Hessian is positive, so the point is a constrained local minimum.
 
-For this convex quadratic problem the high-level pipeline can also recognize
-convex structure.
+For this convex quadratic problem the high-level pipeline can also recognize convex structure.

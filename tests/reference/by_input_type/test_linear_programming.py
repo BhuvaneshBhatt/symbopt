@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import sympy as sp
 
-from symbopt import minimize, solve_lp
+from symbopt import minimize_result, solve_lp
 
 pytestmark = pytest.mark.reference
 
@@ -29,14 +29,14 @@ def _assert_point(result, **expected):
 
 
 def _maximize(objective, constraints=None, **kwargs):
-    result = minimize(-objective, constraints or [], **kwargs)
+    result = minimize_result(-objective, constraints or [], **kwargs)
     candidate = _candidate(result)
     return -candidate.objective_value, candidate.original_variable_values
 
 
 def test_four_variable_linear_program_one():
     x1, x2, x3, x4 = sp.symbols("x1 x2 x3 x4", real=True)
-    result = minimize(
+    result = minimize_result(
         x1 + x2 + x3 + x4,
         [
             sp.Eq(x1 - 5 * x2 + x3 + 3 * x4, 19),
@@ -59,7 +59,7 @@ def test_four_variable_linear_program_one():
 
 def test_four_variable_linear_program_two():
     x1, x2, x3, x4 = sp.symbols("x1 x2 x3 x4", real=True)
-    result = minimize(
+    result = minimize_result(
         2 * x1 + x2 + x3 - x4,
         [
             sp.Le(6 * x1 - x2 + x3, 10),
@@ -113,8 +113,8 @@ def test_twelve_variable_linear_program():
 
 
 def test_reference_linear_program_seven_variables():
-    # Covers source cases 60, 61, 162, and 163.  The latter variants exercise
-    # source-specific precision formatting rather than a distinct mathematical LP.
+    # The same mathematical program is also checked through value and argument
+    # wrappers and alternate numerical-precision settings.
     c = np.array([0, 0, 0, 0, 0, 0, 1], dtype=float)
     A_eq = np.array(
         [

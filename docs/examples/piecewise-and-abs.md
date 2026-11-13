@@ -17,7 +17,7 @@ The branch machinery can represent the sign cases explicitly.
 ```python
 objective = sp.Piecewise(
     (x**2, x <= 0),
-    ((x - 1)**2 + 1, True),
+    ((x - 1) ** 2 + 1, True),
 )
 
 result = minimize(
@@ -26,5 +26,4 @@ result = minimize(
 )
 ```
 
-Each branch is algebraized/solved with its branch condition. The default
-`True` branch is preserved, and the best feasible branch result is returned.
+Each branch is algebraized/solved with its branch condition. The default `True` branch is preserved, and the best feasible branch result is returned.

@@ -1,61 +1,71 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Dict, List, Sequence, Tuple
 
 import numpy as np
 import sympy as sp
 from sympy.polys.polyerrors import PolynomialError
 
+from .chordal import SparsityGraph as IndexedSparsityGraph
+from .chordal import chordal_extension
 from .monomials import (
     Exponent,
     add_exponents,
     basis_data,
     coefficient_map,
     exponent_tuples,
+)
+from .monomials import (
     monomial_basis as cached_basis,
 )
-from .sdp import SDPProblem
-from .chordal import SparsityGraph as IndexedSparsityGraph, chordal_extension
 from .polynomial_structure import build_sparsity_graph, sparse_supported_basis
+from .sdp import SDPProblem
 
 
 @dataclass
 class PSDGramBlock:
+    """A polynomial basis and nonnegative multiplier for one PSD Gram block."""
+
     name: str
-    basis: List[sp.Expr]
+    basis: list[sp.Expr]
     multiplier: sp.Expr | None = None
-    variables: List[sp.Symbol] = field(default_factory=list)
-    basis_terms: Tuple[Tuple[sp.Expr, Exponent], ...] = field(default_factory=tuple)
+    variables: list[sp.Symbol] = field(default_factory=list)
+    basis_terms: tuple[tuple[sp.Expr, Exponent], ...] = field(default_factory=tuple)
 
 
 @dataclass
 class EqualityMultiplierBlock:
+    """A polynomial equality and a basis for its unrestricted multiplier."""
+
     name: str
-    basis: List[sp.Expr]
+    basis: list[sp.Expr]
     polynomial: sp.Expr
-    variables: List[sp.Symbol] = field(default_factory=list)
-    basis_terms: Tuple[Tuple[sp.Expr, Exponent], ...] = field(default_factory=tuple)
+    variables: list[sp.Symbol] = field(default_factory=list)
+    basis_terms: tuple[tuple[sp.Expr, Exponent], ...] = field(default_factory=tuple)
 
 
 @dataclass
 class SOSCompilation:
+    """Polynomial identity, scaled bases and coefficient constraints for an SOS search."""
+
     polynomial: sp.Expr
-    variables: List[sp.Symbol]
+    variables: list[sp.Symbol]
     degree_main: int
     fixed_gamma: sp.Expr
     normalization_scale: sp.Expr
     normalized_polynomial: sp.Expr
     main_gram_count: int = 1
-    variable_blocks: List[List[sp.Symbol]] = field(default_factory=list)
-    clique_separators: List[List[sp.Symbol]] = field(default_factory=list)
+    variable_blocks: list[list[sp.Symbol]] = field(default_factory=list)
+    clique_separators: list[list[sp.Symbol]] = field(default_factory=list)
     sparsity_mode: str = "dense"
-    gram_blocks: List[PSDGramBlock] = field(default_factory=list)
-    equality_blocks: List[EqualityMultiplierBlock] = field(default_factory=list)
-    scalar_names: List[str] = field(default_factory=list)
+    gram_blocks: list[PSDGramBlock] = field(default_factory=list)
+    equality_blocks: list[EqualityMultiplierBlock] = field(default_factory=list)
+    scalar_names: list[str] = field(default_factory=list)
     sdp_problem: SDPProblem | None = None
 
     def pretty(self) -> str:
+        """Format the stored mathematical result and diagnostic metadata for inspection."""
         return "\n".join(
             [
                 f"degree_main: {self.degree_main}",
@@ -72,21 +82,23 @@ class SOSCompilation:
 def monomial_exponent_tuples(
     size: int,
     max_degree: int,
-) -> List[Exponent]:
+) -> list[Exponent]:
+    """Return exponent tuples ordered by total degree and then lexicographically."""
     return list(exponent_tuples(size, max_degree))
 
 
 def monomial_basis(
     vars: Sequence[sp.Symbol],
     max_degree: int,
-) -> List[sp.Expr]:
+) -> list[sp.Expr]:
+    """Return monomials of bounded total degree in the canonical exponent order."""
     return list(cached_basis(tuple(vars), max_degree))
 
 
 def _support_degree_bounds(
     exprs: Sequence[sp.Expr],
     vars: Sequence[sp.Symbol],
-) -> Tuple[int, ...]:
+) -> tuple[int, ...]:
     bounds = [0] * len(vars)
     for expr in exprs:
         try:
@@ -108,7 +120,7 @@ def _safe_box_prune_basis(
     basis: Sequence[sp.Expr],
     exprs: Sequence[sp.Expr],
     vars: Sequence[sp.Symbol],
-) -> List[sp.Expr]:
+) -> list[sp.Expr]:
     """Prune outside a conservative coordinatewise half-Newton box."""
     bounds = _support_degree_bounds(exprs, vars)
     if not any(bounds):
@@ -127,7 +139,8 @@ def sparse_monomial_basis(
     exprs: Sequence[sp.Expr],
     vars: Sequence[sp.Symbol],
     max_degree: int,
-) -> List[sp.Expr]:
+) -> list[sp.Expr]:
+    """Prune a polynomial basis using variable components and coordinate support bounds."""
     raw = monomial_basis(vars, max_degree)
     graph = build_sparsity_graph(exprs, vars)
     components = graph.connected_components()
@@ -138,14 +151,16 @@ def sparse_monomial_basis(
 def poly_coeff_dict(
     expr: sp.Expr,
     vars: Sequence[sp.Symbol],
-) -> Dict[Exponent, sp.Expr]:
+) -> dict[Exponent, sp.Expr]:
+    """Map each exponent tuple to its exact polynomial coefficient."""
     return coefficient_map(expr, vars)
 
 
 def basis_exponents(
     basis: Sequence[sp.Expr],
     vars: Sequence[sp.Symbol],
-) -> List[Exponent]:
+) -> list[Exponent]:
+    """Extract each basis term's exponent tuple in the supplied variable order."""
     return [powers for _, powers in basis_data(tuple(basis), tuple(vars))]
 
 
@@ -153,6 +168,7 @@ def max_abs_coeff(
     expr: sp.Expr,
     vars: Sequence[sp.Symbol],
 ) -> sp.Expr:
+    """Estimate the largest coefficient magnitude for numerical normalization."""
     try:
         coeffs = list(coefficient_map(expr, vars).values())
         if not coeffs:
@@ -174,7 +190,8 @@ def basis_scaling_weights(
     expr: sp.Expr,
     basis: Sequence[sp.Expr],
     vars: Sequence[sp.Symbol],
-) -> List[float]:
+) -> list[float]:
+    """Choose numerical diagonal basis weights from the polynomial coefficients."""
     coeffs = coefficient_map(expr, vars)
     weights = []
     for _, powers in basis_data(tuple(basis), tuple(vars)):
@@ -189,11 +206,13 @@ def basis_scaling_weights(
 def scaled_basis(
     basis: Sequence[sp.Expr],
     weights: Sequence[float],
-) -> List[sp.Expr]:
+) -> list[sp.Expr]:
+    """Apply the supplied diagonal weights to the monomial basis."""
     return [sp.nsimplify(weight) * term for term, weight in zip(basis, weights)]
 
 
 def qmat_expr(name: str, size: int) -> sp.Matrix:
+    """Construct a symmetric symbolic Gram matrix with one symbol per upper-triangle entry."""
     matrix = sp.MutableDenseMatrix.zeros(size, size)
     for row in range(size):
         for col in range(row, size):
@@ -206,6 +225,7 @@ def qmat_expr(name: str, size: int) -> sp.Matrix:
 def sos_expr_from_blocks(
     gram_blocks: Sequence[tuple[list[sp.Expr], sp.Matrix, sp.Expr | None]],
 ) -> sp.Expr:
+    """Assemble the polynomial identity contributed by Gram blocks and their multipliers."""
     expression = sp.Integer(0)
     for basis, matrix, multiplier in gram_blocks:
         vector = sp.Matrix(list(basis))
@@ -219,6 +239,7 @@ def coeff_blocks_to_poly(
     coeff_pos: Sequence[sp.Symbol],
     coeff_neg: Sequence[sp.Symbol],
 ) -> sp.Expr:
+    """Assemble a polynomial from exponent-indexed coefficient blocks."""
     expression = sp.Integer(0)
     for term, pos, neg in zip(block.basis, coeff_pos, coeff_neg):
         expression += (pos - neg) * term
@@ -229,8 +250,8 @@ def _gram_coeff_rows(
     basis: Sequence[sp.Expr],
     multiplier: sp.Expr | None,
     vars: Sequence[sp.Symbol],
-    data: Sequence[Tuple[sp.Expr, Exponent]] | None = None,
-) -> Dict[Exponent, np.ndarray]:
+    data: Sequence[tuple[sp.Expr, Exponent]] | None = None,
+) -> dict[Exponent, np.ndarray]:
     variables = tuple(vars)
     data = tuple(data) if data is not None else basis_data(tuple(basis), variables)
     zero = (0,) * len(variables)
@@ -239,7 +260,7 @@ def _gram_coeff_rows(
         if multiplier is None
         else coefficient_map(multiplier, variables)
     )
-    rows: Dict[Exponent, np.ndarray] = {}
+    rows: dict[Exponent, np.ndarray] = {}
     size = len(basis)
 
     for row, (row_coeff, row_exp) in enumerate(data):
@@ -274,8 +295,8 @@ def _equality_columns(
         poly_terms = coefficient_map(block.polynomial, variables)
         block_data = block.basis_terms or basis_data(tuple(block.basis), variables)
         for term_index, (basis_coeff, basis_exp) in enumerate(block_data):
-            positive: Dict[Exponent, float] = {}
-            negative: Dict[Exponent, float] = {}
+            positive: dict[Exponent, float] = {}
+            negative: dict[Exponent, float] = {}
             for poly_exp, poly_coeff in poly_terms.items():
                 powers = add_exponents(basis_exp, poly_exp)
                 value = float(sp.N(basis_coeff * poly_coeff, 50))
@@ -293,7 +314,7 @@ def _equality_columns(
 def _active_components(
     exprs: Sequence[sp.Expr],
     vars: Sequence[sp.Symbol],
-) -> List[List[sp.Symbol]]:
+) -> list[list[sp.Symbol]]:
     """Return nonempty disconnected correlative variable components."""
     graph = build_sparsity_graph(exprs, vars)
     components = graph.connected_components()
@@ -306,7 +327,7 @@ def _active_components(
 def _chordal_cliques(
     exprs: Sequence[sp.Expr],
     vars: Sequence[sp.Symbol],
-) -> tuple[List[List[sp.Symbol]], List[List[sp.Symbol]]]:
+) -> tuple[list[list[sp.Symbol]], list[list[sp.Symbol]]]:
     """Return maximal cliques of a chordal extension of correlative sparsity.
 
     Unlike disconnected-component splitting, these cliques may overlap.  Every
@@ -367,7 +388,7 @@ def _component_basis(
     degree: int,
     exprs: Sequence[sp.Expr],
     vars: Sequence[sp.Symbol],
-) -> List[sp.Expr]:
+) -> list[sp.Expr]:
     raw = monomial_basis(component, degree)
     return _safe_box_prune_basis(raw, exprs, vars)
 
@@ -375,7 +396,7 @@ def _component_basis(
 def _support_component(
     expr: sp.Expr,
     components: Sequence[Sequence[sp.Symbol]],
-) -> List[sp.Symbol] | None:
+) -> list[sp.Symbol] | None:
     support = set(expr.free_symbols)
     if not support:
         return []
@@ -395,6 +416,7 @@ def compile_sos_relaxation(
     ineq_mult_degree: int = 1,
     eq_mult_degree: int = 1,
 ) -> SOSCompilation:
+    """Compile a polynomial nonnegativity claim into sparse SOS/SDP blocks."""
     variables = list(vars)
     polynomial = sp.expand(polynomial)
     scale = max_abs_coeff(polynomial, variables)
@@ -513,8 +535,8 @@ def compile_sos_relaxation(
         powers.update(column)
     row_powers = sorted(powers, key=lambda value: (sum(value), value))
 
-    a_blocks: List[List[np.ndarray]] = []
-    b_rows: List[float] = []
+    a_blocks: list[list[np.ndarray]] = []
+    b_rows: list[float] = []
     B = (
         np.zeros((len(row_powers), len(scalar_cols)), dtype=float)
         if scalar_cols

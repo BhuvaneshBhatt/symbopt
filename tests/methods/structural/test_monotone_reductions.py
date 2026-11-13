@@ -1,6 +1,6 @@
 import sympy as sp
 
-from symbopt import minimize
+from symbopt import minimize_result
 
 
 def _has_monotone_artifact(result):
@@ -12,7 +12,7 @@ def _has_monotone_artifact(result):
 
 def test_exponential_of_quadratic_reduces_to_quadratic():
     x = sp.symbols("x", real=True)
-    result = minimize(sp.exp((x - 2) ** 2), variables=[x], use_sos=False)
+    result = minimize_result(sp.exp((x - 2) ** 2), variables=[x], use_sos=False)
     assert result.certified is True
     assert result.optimum_value == 1
     assert result.best_candidate.original_variable_values[x] == 2
@@ -22,7 +22,7 @@ def test_exponential_of_quadratic_reduces_to_quadratic():
 
 def test_positive_base_exponential_reduction():
     x = sp.symbols("x", real=True)
-    result = minimize(2 ** ((x - 1) ** 2), variables=[x], use_sos=False)
+    result = minimize_result(2 ** ((x - 1) ** 2), variables=[x], use_sos=False)
     assert result.certified is True
     assert result.optimum_value == 1
     assert result.best_candidate.original_variable_values[x] == 1
@@ -31,7 +31,7 @@ def test_positive_base_exponential_reduction():
 
 def test_log_reduction_adds_domain_and_preserves_exact_value():
     x = sp.symbols("x", real=True)
-    result = minimize(sp.log(x), [sp.Ge(x, 1)], variables=[x], use_sos=False)
+    result = minimize_result(sp.log(x), [sp.Ge(x, 1)], variables=[x], use_sos=False)
     assert result.certified is True
     assert result.optimum_value == 0
     assert result.attained is True
@@ -40,7 +40,7 @@ def test_log_reduction_adds_domain_and_preserves_exact_value():
 
 def test_square_root_monotone_reduction():
     x = sp.symbols("x", real=True)
-    result = minimize(sp.sqrt(x**2 + 1), variables=[x], use_sos=False)
+    result = minimize_result(sp.sqrt(x**2 + 1), variables=[x], use_sos=False)
     assert result.certified is True
     assert result.optimum_value == 1
     assert result.best_candidate.original_variable_values[x] == 0
@@ -48,7 +48,7 @@ def test_square_root_monotone_reduction():
 
 def test_even_integer_power_is_not_misclassified_as_monotone():
     x = sp.symbols("x", real=True)
-    result = minimize((x + 2) ** 2, variables=[x], use_sos=False)
+    result = minimize_result((x + 2) ** 2, variables=[x], use_sos=False)
     assert result.certified is True
     assert result.optimum_value == 0
     assert result.best_candidate.original_variable_values[x] == -2
@@ -57,7 +57,7 @@ def test_even_integer_power_is_not_misclassified_as_monotone():
 
 def test_decreasing_positive_base_exponential_reduction():
     x = sp.symbols("x", real=True)
-    result = minimize(
+    result = minimize_result(
         sp.Rational(1, 2) ** x,
         [sp.Ge(x, 0), sp.Le(x, 3)],
         variables=[x],
@@ -70,7 +70,7 @@ def test_decreasing_positive_base_exponential_reduction():
 
 def test_positive_rational_power_reduction_on_real_domain():
     x = sp.symbols("x", real=True)
-    result = minimize(
+    result = minimize_result(
         (x**2 + 1) ** sp.Rational(3, 2),
         variables=[x],
         use_sos=False,
@@ -78,3 +78,24 @@ def test_positive_rational_power_reduction_on_real_domain():
     assert result.certified is True
     assert result.optimum_value == 1
     assert result.best_candidate.original_variable_values[x] == 0
+
+
+def test_log_sum_optimum():
+    from symbopt import maximize_result
+
+    x, y = sp.symbols("x y", real=True)
+    result = maximize_result(
+        sp.log(x) + sp.log(y), [sp.Eq(x + y, 10)], variables=(x, y), use_sos=False
+    )
+    assert result.certified and result.attained
+    assert sp.simplify(result.optimum_value - 2 * sp.log(5)) == 0
+    assert result.best_candidate.original_variable_values == {x: 5, y: 5}
+
+
+def test_complex_log_arguments():
+    from symbopt.objective_transforms import find_monotone_reduction
+
+    x = sp.Symbol("x", real=True)
+    expression = sp.log(x + sp.I) + sp.log(x - sp.I)
+    assert sp.simplify(expression.subs(x, 0)) == 0
+    assert find_monotone_reduction(expression, (), (x,)) is None

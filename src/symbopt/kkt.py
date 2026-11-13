@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import sympy as sp
 
+from ._symbols import fresh_symbols
 from .problem_models import KKTSystem, LiftedProblem
 
 
 def build_kkt_system(
     problem: LiftedProblem,
-    objective: Optional[sp.Expr] = None,
+    objective: sp.Expr | None = None,
     close_strict_ineq: bool = True,
     include_graph_equalities: bool = True,
     include_graph_ineq: bool = True,
@@ -27,8 +26,17 @@ def build_kkt_system(
         close_strict=close_strict_ineq,
     )
 
-    lam = [sp.Symbol(f"lam_{i + 1}", real=True) for i in range(len(eq_residuals))]
-    mu = [sp.Symbol(f"mu_{j + 1}", real=True) for j in range(len(ineq_residuals))]
+    occupied = set(problem.all_variables) | f.free_symbols
+    for residual in (*eq_residuals, *ineq_residuals):
+        occupied.update(residual.free_symbols)
+    lam = fresh_symbols(
+        (f"lam_{i + 1}" for i in range(len(eq_residuals))), occupied, real=True
+    )
+    mu = fresh_symbols(
+        (f"mu_{i + 1}" for i in range(len(ineq_residuals))),
+        (*occupied, *lam),
+        real=True,
+    )
 
     L = f
     for mult, residual in zip(lam, eq_residuals):
@@ -49,8 +57,8 @@ def build_kkt_system(
 
     return KKTSystem(
         primal_variables=list(problem.all_variables),
-        equality_multipliers=lam,
-        inequality_multipliers=mu,
+        equality_multipliers=list(lam),
+        inequality_multipliers=list(mu),
         lagrangian=sp.expand(L),
         stationarity_equations=stationarity,
         primal_equalities=primal_equalities,

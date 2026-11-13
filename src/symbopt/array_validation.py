@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -35,7 +35,7 @@ def matrix_rhs(matrix, rhs, size: int, matrix_name: str, rhs_name: str):
 
 
 def checked_bounds(
-    bounds: Optional[Sequence[Tuple[Optional[float], Optional[float]]]],
+    bounds: Sequence[tuple[float | None, float | None]] | None,
     size: int,
 ):
     """Validate SciPy-style scalar bounds."""

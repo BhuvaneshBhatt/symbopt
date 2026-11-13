@@ -1,6 +1,6 @@
 import sympy as sp
 
-from symbopt import argmax, argmin, maximize, maxval, minval
+from symbopt import argmax, argmin, maximize_result, maxval, minval
 
 x, y = sp.symbols("x y", real=True)
 
@@ -12,13 +12,11 @@ def test_minval_and_maxval_exact_quadratic_interval():
 
 
 def test_maximize_maps_full_result_to_original_objective():
-    result = maximize(-((x - 2) ** 2) + 5, use_sos=False)
+    result = maximize_result(-((x - 2) ** 2) + 5, use_sos=False)
     assert result.certified
     assert sp.simplify(result.optimum_value - 5) == 0
-    assert result.best_candidate is not None
     assert sp.simplify(result.best_candidate.objective_value - 5) == 0
     assert sp.simplify(result.best_candidate.original_variable_values[x] - 2) == 0
-    assert result.certificate is not None
     assert sp.simplify(result.certificate.lower_bound - 5) == 0
     assert sp.simplify(result.certificate.upper_bound - 5) == 0
 
@@ -42,14 +40,13 @@ def test_maxval_unattained_supremum_and_argmax_empty():
     assert argmax(-1 / x, constraints, use_sos=False) == ()
 
 
-def test_extremum_api_respects_explicit_variables_and_parameters():
+def test_decision_parameter_roles():
     a = sp.symbols("a", positive=True)
-    assert minval(a * x**2, variables=[x], use_sos=False) is None
-    # Parameter-dependent global certification is intentionally not inferred.
-    assert argmin(a * x**2, variables=[x], use_sos=False) == ()
+    assert minval(a * x**2, variables=[x], use_sos=False) == 0
+    assert argmin(a * x**2, variables=[x], use_sos=False) == ({x: sp.S.Zero},)
 
 
-def test_minval_exact_periodic_cosine_reference_case_263():
+def test_minval_exact_periodic_cosine():
     assert minval(sp.cos(x), use_sos=False) == -1
 
 
@@ -60,7 +57,7 @@ def test_argmax_exact_periodic_sine():
 
 def test_maximize_preserves_normalized_kkt_provenance():
     objective = -(x**4) + 2 * x**2
-    result = maximize(objective, use_sos=False)
+    result = maximize_result(objective, use_sos=False)
     assert result.optimization_sense == "maximize"
     assert result.lifted_problem.original_objective == objective
     if result.kkt_system is None:

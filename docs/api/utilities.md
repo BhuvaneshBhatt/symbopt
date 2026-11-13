@@ -13,8 +13,7 @@
 ```{autofunction} symbopt.clear_symbolic_caches
 ```
 
-The cache utilities are primarily useful for benchmarking, long-lived
-interactive sessions, and reproducible performance measurements.
+The cache utilities are primarily useful for benchmarking, long-lived interactive sessions, and reproducible performance measurements.
 
 ## Polynomial structure
 
@@ -24,5 +23,4 @@ interactive sessions, and reproducible performance measurements.
 ```{autofunction} symbopt.build_symmetry_report
 ```
 
-These helpers expose the variable-interaction and lightweight symmetry analyses
-used by sparse polynomial/SOS routing.
+These helpers expose the variable-interaction and lightweight symmetry analyses used by sparse polynomial/SOS routing.

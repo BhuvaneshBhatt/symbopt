@@ -1,7 +1,7 @@
 import pytest
 import sympy as sp
 
-from symbopt import minimize
+from symbopt import minimize_result
 
 pytestmark = pytest.mark.reference
 
@@ -28,13 +28,13 @@ def _assert_point(result, **expected):
 
 
 def _maximize(objective, constraints=None, **kwargs):
-    result = minimize(-objective, constraints or [], **kwargs)
+    result = minimize_result(-objective, constraints or [], **kwargs)
     candidate = _candidate(result)
     return -candidate.objective_value, candidate.original_variable_values
 
 
 def test_absolute_value_disk_minimum():
-    result = minimize(
+    result = minimize_result(
         x**2 + 3 * y**2 + sp.Abs(x),
         [sp.Le(x**2 + y**2, 1)],
         use_sos=False,

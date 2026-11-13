@@ -1,9 +1,12 @@
 from __future__ import annotations
-from typing import Dict, Sequence
+
+from collections.abc import Sequence
+
 import sympy as sp
 
 
 def nullspace_directions(hessian_at_point: sp.Matrix):
+    """Return Hessian nullspace directions, or an empty list if symbolic construction fails."""
     try:
         return hessian_at_point.nullspace()
     except (TypeError, ValueError, ArithmeticError, NotImplementedError):
@@ -13,10 +16,11 @@ def nullspace_directions(hessian_at_point: sp.Matrix):
 def directional_taylor_test(
     f: sp.Expr,
     vars: Sequence[sp.Symbol],
-    point: Dict[sp.Symbol, sp.Expr],
+    point: dict[sp.Symbol, sp.Expr],
     direction: sp.Matrix,
     max_order: int = 6,
 ):
+    """Inspect the first nonzero Taylor coefficient along a direction; this is candidate evidence."""
     t = sp.Symbol("_t", real=True)
     subs = {v: sp.expand(point[v] + t * direction[i]) for i, v in enumerate(vars)}
     try:
@@ -24,7 +28,7 @@ def directional_taylor_test(
         s = sp.series(series_expr, t, 0, max_order + 1).removeO()
     except (TypeError, ValueError, ArithmeticError, NotImplementedError):
         try:
-            s = sp.expand((f.subs(subs) - f.subs(point)))
+            s = sp.expand(f.subs(subs) - f.subs(point))
         except (TypeError, ValueError, ArithmeticError, NotImplementedError):
             return "unknown", None, sp.Integer(0)
     poly = sp.Poly(sp.expand(s), t)
@@ -44,9 +48,10 @@ def directional_taylor_test(
 def classify_degenerate(
     f: sp.Expr,
     vars: Sequence[sp.Symbol],
-    point: Dict[sp.Symbol, sp.Expr],
+    point: dict[sp.Symbol, sp.Expr],
     hessian_at_point: sp.Matrix,
 ):
+    """Summarize directional nullspace tests without claiming a full neighborhood proof."""
     dirs = nullspace_directions(hessian_at_point)
     if not dirs:
         return None, []

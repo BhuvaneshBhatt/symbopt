@@ -25,5 +25,4 @@
 :members:
 ```
 
-See {doc}`../methods/verified-intervals` for rigorous-bound provenance and
-domain handling.
+See {doc}`../methods/verified-intervals` for rigorous-bound provenance and domain handling.

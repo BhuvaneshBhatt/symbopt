@@ -1,33 +1,39 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 import numpy as np
 import sympy as sp
 from sympy.core.relational import Equality, Relational
 
-from .symbolic_cache import cached_gradient, cached_hessian, cached_poly
 from .diagnostics import DiagnosticKind, SolverDiagnostic
 from .lp import solve_lp
-from .problem_models import LiftedProblem
 from .numeric_utils import eval_float
+from .precision import float64_backends_allowed, outward_float
+from .problem_models import LiftedProblem
 from .qp import solve_convex_qp
-from .precision import float64_backends_allowed
 from .relation_checks import normalize_relational, relation_holds
+from .symbolic_cache import (
+    affine_coefficients,
+    cached_gradient,
+    cached_hessian,
+    cached_poly,
+)
 from .verified_intervals import EvalConfig, enclose_expression
 
 
 @dataclass
 class DirectSolveResult:
+    """Direct LP or QP candidate with exact postprocessing and global-proof metadata."""
+
     kind: str
-    point: Dict[sp.Symbol, sp.Expr]
+    point: dict[sp.Symbol, sp.Expr]
     objective_value: sp.Expr
-    multipliers: Dict[sp.Symbol, sp.Expr] = field(default_factory=dict)
-    metadata: Dict[str, object] = field(default_factory=dict)
+    multipliers: dict[sp.Symbol, sp.Expr] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
-def _poly_degree(expr, vars) -> Optional[int]:
+def _poly_degree(expr, vars) -> int | None:
     try:
         return cached_poly(sp.expand(expr), tuple(vars)).total_degree()
     except (sp.PolynomialError, ValueError, TypeError):
@@ -39,15 +45,19 @@ def _extract_linear_system(constraints, vars, digits: int = 30):
     ineq_rhs = []
     equalities = []
     eq_rhs = []
-    zero = {var: 0 for var in vars}
-
     for relation in constraints:
         kind, residual = normalize_relational(relation)
-        if _poly_degree(residual, vars) not in {0, 1}:
+        data = affine_coefficients(residual, vars)
+        if data is None:
             return None
-        gradient = cached_gradient(residual, tuple(vars))
-        coeffs = [eval_float(component, digits) for component in gradient]
-        constant = eval_float(residual.subs(zero), digits)
+        coefficients, constant_expr = data
+        if any(value.free_symbols for value in (*coefficients, constant_expr)):
+            return None
+        try:
+            coeffs = [eval_float(component, digits) for component in coefficients]
+            constant = eval_float(constant_expr, digits)
+        except (ValueError, TypeError, ArithmeticError):
+            return None
         if kind == "ge":
             inequalities.append([-value for value in coeffs])
             ineq_rhs.append(constant)
@@ -110,10 +120,11 @@ def _exact_feasible(constraints, point):
     return exact_all, numeric_all, results
 
 
-def _recover_exact_kkt(objective, constraints, vars, numeric_point):
-    equalities, active_ineq = _active_constraints(constraints, numeric_point)
-    lam = sp.symbols(f"_lam0:{len(equalities)}", real=True)
-    mu = sp.symbols(f"_mu0:{len(active_ineq)}", nonnegative=True)
+def _recover_exact_kkt(objective, constraints, vars, numeric_point, active_constraints):
+    """Recover an exact feasible KKT point using the prepared active relations."""
+    equalities, active_ineq = active_constraints
+    lam = tuple(sp.Dummy(f"lam{i}", real=True) for i in range(len(equalities)))
+    mu = tuple(sp.Dummy(f"mu{i}", nonnegative=True) for i in range(len(active_ineq)))
     lagrangian = objective
     for symbol, (_, residual) in zip(lam, equalities):
         lagrangian += symbol * residual
@@ -192,11 +203,11 @@ def _postprocess_direct(
     multipliers = {}
     recovered = False
     exact_feasible, numeric_feasible, checks = _exact_feasible(constraints, fallback)
+    active_constraints = _active_constraints(constraints, numeric_point)
     metadata = {
         "numeric_point": {sp.sstr(k): float(v) for k, v in numeric_point.items()},
         "active_constraints": [
-            sp.sstr(relation)
-            for relation, _ in _active_constraints(constraints, numeric_point)[1]
+            sp.sstr(relation) for relation, _ in active_constraints[1]
         ],
         "exact_recovered": False,
         "feasibility_checks": checks,
@@ -205,7 +216,9 @@ def _postprocess_direct(
     }
 
     try:
-        recovered_data = _recover_exact_kkt(objective, constraints, vars, numeric_point)
+        recovered_data = _recover_exact_kkt(
+            objective, constraints, vars, numeric_point, active_constraints
+        )
         if recovered_data is not None:
             (
                 exact_point,
@@ -255,6 +268,28 @@ def _postprocess_direct(
     metadata["numeric_feasible"] = numeric_feasible
     metadata["exact_recovered"] = recovered
     metadata["rigorous_global"] = bool(recovered and exact_feasible and convexity_exact)
+    if exact_feasible and not metadata["rigorous_global"]:
+        from .convex_rules import convex_kkt_certificate
+        from .rule_utils import RULE_ERRORS, RuleContext
+
+        try:
+            proof = convex_kkt_certificate(
+                RuleContext(objective, tuple(constraints), tuple(vars)), exact_point
+            )
+        except RULE_ERRORS:
+            proof = None
+        if proof is not None:
+            metadata.update(
+                {
+                    "exact_recovered": True,
+                    "rigorous_global": True,
+                    "convexity_exact": True,
+                    "stationarity_residuals": [
+                        sp.sstr(v) for v in proof.metadata["stationarity"]
+                    ],
+                    "convex_kkt": dict(proof.metadata),
+                }
+            )
     return DirectSolveResult(kind, exact_point, value, multipliers, metadata)
 
 
@@ -262,9 +297,10 @@ def try_direct_solver(
     objective,
     constraints,
     vars,
-    diagnostics: Optional[List[SolverDiagnostic]] = None,
-    working_precision: Optional[int] = None,
+    diagnostics: list[SolverDiagnostic] | None = None,
+    working_precision: int | None = None,
 ):
+    """Route affine or quadratic problems to direct numerical solvers with validation."""
     if not vars:
         return None
     if not float64_backends_allowed(objective, constraints, working_precision):
@@ -278,6 +314,31 @@ def try_direct_solver(
                 )
             )
         return None
+    if not constraints and not objective.has(sp.Float):
+        from .rule_utils import RULE_ERRORS, RuleContext
+        from .spectral_rules import try_exact_quadratic
+
+        try:
+            exact = try_exact_quadratic(RuleContext(objective, (), tuple(vars)))
+        except RULE_ERRORS:
+            exact = None
+        if exact is not None:
+            return DirectSolveResult(
+                "qp",
+                dict(exact.points[0]),
+                exact.value,
+                metadata={
+                    "exact_recovered": True,
+                    "exact_feasible": True,
+                    "convexity_exact": True,
+                    "rigorous_global": True,
+                    "stationarity_residuals": [
+                        sp.sstr(v) for v in exact.metadata["stationarity_residuals"]
+                    ],
+                    "method": "exact_linear_algebra",
+                    "hessian": exact.metadata["hessian"],
+                },
+            )
     numeric_digits = max(int(working_precision or 30), 30)
     system = _extract_linear_system(constraints, vars, numeric_digits)
     if system is None:
@@ -288,13 +349,13 @@ def try_direct_solver(
     zero = {var: 0 for var in vars}
 
     if degree is not None and degree <= 1:
-        gradient = cached_gradient(objective, tuple(vars))
+        coefficients, constant_expr = affine_coefficients(objective, vars)
         try:
             coeffs = np.asarray(
-                [eval_float(component, numeric_digits) for component in gradient],
+                [eval_float(component, numeric_digits) for component in coefficients],
                 dtype=float,
             )
-            constant = eval_float(objective.subs(zero), numeric_digits)
+            constant = eval_float(constant_expr, numeric_digits)
         except (ValueError, TypeError, ArithmeticError):
             coeffs = None
         if coeffs is not None:
@@ -414,31 +475,26 @@ def infer_box_bounds(variables, constraints):
         variables = (variables,)
     if isinstance(constraints, Relational):
         constraints = (constraints,)
-    bounds: Dict[sp.Symbol, List[Optional[float]]] = {
+    bounds: dict[sp.Symbol, list[float | None]] = {
         var: [None, None] for var in variables
     }
     for relation in constraints:
         lhs, rhs = relation.lhs, relation.rhs
-        if isinstance(lhs, sp.Symbol) and rhs.is_number:
-            value = eval_float(rhs)
-            if relation.func in (sp.Ge, sp.Gt):
-                current = bounds[lhs][0]
-                bounds[lhs][0] = value if current is None else max(current, value)
-            elif relation.func in (sp.Le, sp.Lt):
-                current = bounds[lhs][1]
-                bounds[lhs][1] = value if current is None else min(current, value)
-            elif relation.func is sp.Eq:
-                bounds[lhs] = [value, value]
-        if isinstance(rhs, sp.Symbol) and lhs.is_number:
-            value = eval_float(lhs)
-            if relation.func in (sp.Ge, sp.Gt):
-                current = bounds[rhs][1]
-                bounds[rhs][1] = value if current is None else min(current, value)
-            elif relation.func in (sp.Le, sp.Lt):
-                current = bounds[rhs][0]
-                bounds[rhs][0] = value if current is None else max(current, value)
-            elif relation.func is sp.Eq:
-                bounds[rhs] = [value, value]
+        if isinstance(lhs, sp.Symbol) and lhs in bounds and rhs.is_number:
+            variable, endpoint, kind = lhs, rhs, relation.func
+        elif isinstance(rhs, sp.Symbol) and rhs in bounds and lhs.is_number:
+            variable, endpoint, kind = rhs, lhs, relation.reversed.func
+        else:
+            continue
+        if kind in (sp.Ge, sp.Gt, sp.Eq):
+            low = outward_float(endpoint, -1)
+            current = bounds[variable][0]
+            bounds[variable][0] = low if current is None else max(current, low)
+        if kind in (sp.Le, sp.Lt, sp.Eq):
+            high = outward_float(endpoint, 1)
+            current = bounds[variable][1]
+            bounds[variable][1] = high if current is None else min(current, high)
+
     return {
         var: (low, high)
         for var, (low, high) in bounds.items()
@@ -462,6 +518,7 @@ def _rigorous_enclosure(expr, bounds):
 
 
 def complete_box_bounds(problem: LiftedProblem, bounds):
+    """Extend a search box with rigorous enclosures for defined auxiliary coordinates."""
     completed = dict(bounds)
     for _ in range(8):
         changed = False

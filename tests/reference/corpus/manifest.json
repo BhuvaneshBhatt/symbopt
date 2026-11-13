@@ -1,0 +1,19 @@
+{
+  "case_count": 779,
+  "case_ids_sha256": "c42a6672899c83821a1bc7fa36979b2b7ad355dab5dcb6449654e86a7891a42f",
+  "cases_sha256": "9f190491eaa105d97dc6c1f8f9bcbfecc72c5abac2847c6a04f4c01778145fcd",
+  "categories": {
+    "general_optimization": 29,
+    "global_optimization": 262,
+    "piecewise": 4,
+    "univariate": 424,
+    "worked_examples": 60
+  },
+  "format": "SymPy constructor expressions; numerical root hints use explicit Float values; unknown special functions remain named symbolic functions.",
+  "solver_profile": {
+    "use_sos": false,
+    "max_active_sets": 16,
+    "interval_max_boxes": 12,
+    "interval_tol": 1e-07
+  }
+}

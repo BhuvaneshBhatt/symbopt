@@ -1,4 +1,4 @@
-# KKT and Karush--John conditions
+# KKT and Karush–John conditions
 
 For equalities \(g_i(x)=0\) and inequalities normalized as
 
@@ -35,36 +35,32 @@ g_i(x)=0,\qquad h_j(x)\ge0,
 \mu_jh_j(x)=0.
 \]
 
-## Karush--John
+## Karush–John
 
-When a constraint qualification cannot be assumed, the objective multiplier
-\(\rho\ge0\) is introduced. Multiplier nontriviality is enforced by a
-normalization of the Karush--John multiplier vector.
+When a constraint qualification cannot be assumed, the objective multiplier \(\rho\ge0\) is introduced. Multiplier nontriviality is enforced by a normalization of the Karush–John multiplier vector.
 
 ## Second-order classification
 
-For constrained points, the full Hessian is generally not the correct test.
-`symbopt` forms a tangent-space basis for equality and strongly active
-constraints and examines the reduced Hessian
+For constrained points, the full Hessian is generally not the correct test. `symbopt` forms a tangent-space basis for equality and strongly active constraints and examines the reduced Hessian
 
 \[
 Z^T\nabla^2_{xx}LZ.
 \]
 
-Active inequalities with unresolved multiplier status can make the
-classification inconclusive.
+Active inequalities with unresolved multiplier status can make the classification inconclusive.
 
 ## Example
 
 ```python
+import sympy as sp
+from symbopt import critical_points
+
 x = sp.symbols("x", real=True)
 critical_points((x, [sp.Ge(x, 1)]), [x])
 ```
 
-The boundary point \(x=1\) satisfies KKT with a nonnegative multiplier under the
-package's \(h\ge0\) convention.
+The boundary point \(x=1\) satisfies KKT with a nonnegative multiplier under the package's \(h\ge0\) convention.
 
 ## Further reading
 
-See Nocedal--Wright, Bertsekas, and Boyd--Vandenberghe in {doc}`../reference/references` for the mathematical background.
-
+See Nocedal–Wright, Bertsekas, and Boyd–Vandenberghe in {doc}`../reference/references` for the mathematical background.

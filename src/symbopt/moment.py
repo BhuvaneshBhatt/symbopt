@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence
 import math
+from collections.abc import Sequence
+from dataclasses import dataclass
 
 import numpy as np
 import sympy as sp
+from scipy.linalg import eigh, qr
 
 from .monomials import (
     Exponent,
@@ -14,46 +15,57 @@ from .monomials import (
     basis_data,
     coefficient_map,
     moment_symbol,
+)
+from .monomials import (
     monomial_basis as cached_basis,
 )
 
 
 @dataclass
 class MomentMatrix:
-    basis: List[sp.Expr]
+    """A truncated moment matrix with its basis and indexed moment symbols."""
+
+    basis: list[sp.Expr]
     matrix: sp.Matrix
 
 
 @dataclass
 class LocalizingMatrix:
+    """A polynomial-weighted localizing matrix on a truncated monomial basis."""
+
     polynomial: sp.Expr
-    basis: List[sp.Expr]
+    basis: list[sp.Expr]
     matrix: sp.Matrix
 
 
 @dataclass
 class MomentRelaxation:
+    """Moment and localizing matrices for a polynomial optimization relaxation."""
+
     order: int
-    variables: List[sp.Symbol]
-    basis: List[sp.Expr]
+    variables: list[sp.Symbol]
+    basis: list[sp.Expr]
     moment_matrix: MomentMatrix
-    localizing_matrices: List[LocalizingMatrix]
+    localizing_matrices: list[LocalizingMatrix]
     objective_linear_form: sp.Expr
 
 
 @dataclass
 class AtomExtractionResult:
+    """Recovered support points, weights and exact or numerical moment-verification evidence."""
+
     flat: bool
     rank_m: int
-    rank_m_minus_1: Optional[int]
-    atoms: List[Dict[sp.Symbol, sp.Expr]]
-    weights: List[sp.Expr]
+    rank_m_minus_1: int | None
+    atoms: list[dict[sp.Symbol, sp.Expr]]
+    weights: list[sp.Expr]
     message: str
-    multiplication_matrices: Dict[str, sp.Matrix] | None = None
+    multiplication_matrices: dict[str, sp.Matrix] | None = None
     verified: bool = False
-    residuals: Dict[str, sp.Expr] | None = None
+    residuals: dict[str, sp.Expr] | None = None
 
     def pretty(self) -> str:
+        """Format the stored mathematical result and diagnostic metadata for inspection."""
         return "\n".join(
             [
                 f"flat: {self.flat}",
@@ -71,13 +83,14 @@ class AtomExtractionResult:
 def monomial_basis(
     vars: Sequence[sp.Symbol],
     degree: int,
-) -> List[sp.Expr]:
+) -> list[sp.Expr]:
+    """Return monomials of bounded total degree in the canonical exponent order."""
     return list(cached_basis(tuple(vars), degree))
 
 
 def _moment_value(
     powers: Exponent,
-    values: Optional[Dict[Exponent, sp.Expr]],
+    values: dict[Exponent, sp.Expr] | None,
 ) -> sp.Expr:
     if values is None:
         return moment_symbol(powers)
@@ -87,7 +100,7 @@ def _moment_value(
 def build_moment_matrix(
     vars: Sequence[sp.Symbol],
     order: int,
-    moment_values: Optional[Dict[Exponent, sp.Expr]] = None,
+    moment_values: dict[Exponent, sp.Expr] | None = None,
 ) -> MomentMatrix:
     """Construct the truncated moment matrix for the requested variables and order.
 
@@ -116,7 +129,7 @@ def build_localizing_matrix(
     poly: sp.Expr,
     vars: Sequence[sp.Symbol],
     order: int,
-    moment_values: Optional[Dict[Exponent, sp.Expr]] = None,
+    moment_values: dict[Exponent, sp.Expr] | None = None,
 ) -> LocalizingMatrix:
     """Construct the localizing matrix associated with a polynomial inequality.
 
@@ -192,40 +205,33 @@ def _numeric_rank(matrix: sp.Matrix, tol: float = 1e-8) -> int:
 def _basis_exponents(
     basis: Sequence[sp.Expr],
     vars: Sequence[sp.Symbol],
-) -> List[Exponent]:
+) -> list[Exponent]:
     variables = tuple(vars)
     return [powers for _, powers in basis_data(tuple(basis), variables)]
 
 
-def _solve_weights(
-    atoms: List[Dict[sp.Symbol, sp.Expr]],
-    basis: Sequence[sp.Expr],
-    moment_matrix: sp.Matrix,
-) -> List[sp.Expr]:
+def _solve_weights(atoms, basis, moment_matrix, indices, constant_index):
+    """Recover weights in the same independent monomial basis used for extraction."""
     if not atoms:
         return []
-
-    row_count = max(1, len(atoms))
-    rows = []
-    rhs = []
-    for index, term in enumerate(basis[:row_count]):
-        rows.append([sp.nsimplify(sp.expand(term.subs(atom))) for atom in atoms])
-        rhs.append(sp.nsimplify(moment_matrix[index, 0]))
-
-    matrix = sp.Matrix(rows)
-    target = sp.Matrix(rhs)
+    constant = basis[constant_index]
+    rows = [
+        [sp.expand(basis[i].subs(atom, simultaneous=True)) for atom in atoms]
+        for i in indices
+    ]
+    rhs = [moment_matrix[i, constant_index] / constant for i in indices]
     try:
-        solution = matrix.gauss_jordan_solve(target)[0]
+        solution = sp.Matrix(rows).gauss_jordan_solve(sp.Matrix(rhs))[0]
         return [sp.nsimplify(value) for value in solution]
     except (TypeError, ValueError, ArithmeticError, NotImplementedError):
-        weight = sp.nsimplify(moment_matrix[0, 0] / len(atoms))
-        return [weight for _ in atoms]
+        mass = moment_matrix[constant_index, constant_index] / constant**2
+        return [sp.nsimplify(mass / len(atoms)) for _ in atoms]
 
 
 def _dedupe_atoms(
-    atoms: List[Dict[sp.Symbol, sp.Expr]],
+    atoms: list[dict[sp.Symbol, sp.Expr]],
     vars: Sequence[sp.Symbol],
-) -> List[Dict[sp.Symbol, sp.Expr]]:
+) -> list[dict[sp.Symbol, sp.Expr]]:
     unique = []
     for atom in atoms:
         duplicate = any(
@@ -242,152 +248,163 @@ def extract_moment_atoms(
     basis: Sequence[sp.Expr],
     vars: Sequence[sp.Symbol],
     tol: float = 1e-8,
+    *,
+    max_separating_attempts: int = 16,
 ) -> AtomExtractionResult:
-    """Recover finitely supported optimizer candidates from a flat moment matrix.
+    """Recover real atoms and positive weights from numerically flat moment data.
 
-    Extraction first checks the numerical flat-rank condition, then constructs
-    multiplication matrices whose joint spectral information yields atoms and
-    weights when the finite-support assumptions are satisfied.
+    Pivoted QR selects an independent previous-order monomial basis. Joint
+    diagonalization uses a separating linear combination of coordinate
+    operators, so individual coordinates may have repeated values. Numerical
+    proposals are verified against the complete original moment matrix exactly.
+    A failed separation or reconstruction returns an unverified result.
     """
-    variables = list(vars)
+    if (
+        isinstance(max_separating_attempts, bool)
+        or not isinstance(max_separating_attempts, int)
+        or max_separating_attempts < 1
+    ):
+        raise ValueError("max_separating_attempts must be a positive integer")
+    variables = [vars] if isinstance(vars, sp.Symbol) else list(vars)
+    basis = tuple(map(sp.sympify, basis))
+    if moment_matrix.shape != (len(basis), len(basis)):
+        raise ValueError("the moment matrix must match the supplied basis")
+    data = basis_data(tuple(basis), tuple(variables))
+    powers = [exponents for _, exponents in data]
+    degree = max((sum(exponents) for exponents in powers), default=0)
+    previous = [i for i, exponents in enumerate(powers) if sum(exponents) < degree]
     rank_m = _numeric_rank(moment_matrix, tol)
-    rank_prev = None
-
-    if len(basis) > 1:
-        prev_size = max(1, len(basis) - len(variables))
-        rank_prev = _numeric_rank(
-            moment_matrix[:prev_size, :prev_size],
-            tol,
-        )
-
+    rank_prev = (
+        _numeric_rank(moment_matrix.extract(previous, previous), tol)
+        if previous
+        else None
+    )
     flat = rank_prev is not None and rank_prev == rank_m
-    atoms: List[Dict[sp.Symbol, sp.Expr]] = []
-    weights: List[sp.Expr] = []
-    mults: Dict[str, sp.Matrix] = {}
-
     if not flat:
         return AtomExtractionResult(
-            False,
+            False, rank_m, rank_prev, [], [], "Flatness failed."
+        )
+    constant_index = next(
+        (i for i, exponents in enumerate(powers) if not any(exponents)), None
+    )
+    if constant_index is None:
+        return AtomExtractionResult(
+            True, rank_m, rank_prev, [], [], "The basis must include a constant."
+        )
+    if rank_m == 0:
+        atoms = [dict.fromkeys(variables, sp.S.Zero)]
+        verified, residuals = verify_atom_measure(
+            atoms, [sp.S.Zero], basis, moment_matrix, variables
+        )
+        return AtomExtractionResult(
+            True,
             rank_m,
             rank_prev,
             atoms,
-            weights,
-            "Flatness failed.",
-            None,
-            False,
-            None,
+            [sp.S.Zero],
+            "Zero moment measure.",
+            {},
+            verified,
+            residuals,
         )
 
     numeric = np.array(moment_matrix.evalf().tolist(), dtype=float)
-    rank = max(1, rank_m)
-    basis_exps = _basis_exponents(basis, variables)
-    exp_map = {powers: index for index, powers in enumerate(basis_exps)}
-    indices = list(range(min(rank, len(basis))))
+    previous_matrix = numeric[np.ix_(previous, previous)]
+    _, _, pivots = qr(previous_matrix, pivoting=True, mode="economic")
+    indices = [previous[i] for i in pivots[:rank_m]]
     base = numeric[np.ix_(indices, indices)]
-    inverse = np.linalg.pinv(base, rcond=tol)
-
+    exp_map = {exponents: i for i, exponents in enumerate(powers)}
+    shifted = []
+    mults = {}
     for var_pos, variable in enumerate(variables):
-        mult = np.zeros((len(indices), len(indices)))
-        for col, basis_index in enumerate(indices):
-            powers = list(basis_exps[basis_index])
-            powers[var_pos] += 1
-            target_exp = tuple(powers)
-            target_index = exp_map.get(target_exp)
-            if target_index is None:
-                continue
-            column = numeric[np.ix_(indices, [target_index])]
-            mult[:, col] = (inverse @ column).ravel()
-        mults[str(variable)] = sp.Matrix(mult)
-
-    if len(variables) == 1 and mults:
-        variable = variables[0]
-        matrix = np.array(
-            mults[str(variable)].evalf().tolist(),
-            dtype=float,
-        )
-        eigenvalues = np.linalg.eigvals(matrix)
-        atoms = [{variable: sp.nsimplify(value.real)} for value in eigenvalues]
-        atoms = _dedupe_atoms(atoms, variables)
-        weights = _solve_weights(atoms, basis, moment_matrix)
-        verified, residuals = verify_atom_measure(
-            atoms,
-            weights,
-            basis,
-            moment_matrix,
-            variables,
-        )
-        return AtomExtractionResult(
-            True,
-            rank_m,
-            rank_prev,
-            atoms,
-            weights,
-            "Extracted atoms from a one-dimensional multiplication matrix.",
-            mults,
-            verified,
-            residuals,
-        )
-
-    if len(variables) >= 2 and mults:
-        first = np.array(
-            mults[str(variables[0])].evalf().tolist(),
-            dtype=float,
-        )
-        eigenvalues, vectors = np.linalg.eig(first)
-        for index, eigenvalue in enumerate(eigenvalues):
-            vector = vectors[:, index]
-            atom = {variables[0]: sp.nsimplify(np.real(eigenvalue))}
-            for variable in variables[1:]:
-                matrix = np.array(
-                    mults[str(variable)].evalf().tolist(),
-                    dtype=float,
+        columns = []
+        for index in indices:
+            exponents = list(powers[index])
+            exponents[var_pos] += 1
+            target = exp_map.get(tuple(exponents))
+            if target is None:
+                return AtomExtractionResult(
+                    True,
+                    rank_m,
+                    rank_prev,
+                    [],
+                    [],
+                    "The basis lacks a required shifted monomial.",
                 )
-                num = np.vdot(vector, matrix @ vector)
-                den = np.vdot(vector, vector)
-                atom[variable] = sp.nsimplify(np.real(num / den))
+            scale = float(sp.N(data[index][0] / data[target][0]))
+            columns.append(scale * numeric[indices, target])
+        matrix = np.column_stack(columns)
+        shifted.append(matrix)
+        try:
+            mults[str(variable)] = sp.Matrix(np.linalg.solve(base, matrix))
+        except np.linalg.LinAlgError:
+            return AtomExtractionResult(
+                True,
+                rank_m,
+                rank_prev,
+                [],
+                [],
+                "The selected moment basis is numerically singular.",
+            )
+
+    atoms, weights, residuals = [], [], None
+    for attempt in range(1, max_separating_attempts + 1):
+        coefficients = np.array(
+            [attempt**i for i in range(len(variables))], dtype=float
+        )
+        coefficients /= np.max(coefficients)
+        combination = sum(c * matrix for c, matrix in zip(coefficients, shifted))
+        try:
+            eigenvalues, vectors = eigh(
+                (combination + combination.T) / 2, (base + base.T) / 2
+            )
+        except np.linalg.LinAlgError:
+            break
+        if len(eigenvalues) > 1 and np.min(np.diff(eigenvalues)) <= tol * max(
+            1.0, np.max(np.abs(eigenvalues))
+        ):
+            continue
+        atoms = []
+        for column in range(rank_m):
+            vector = vectors[:, column]
+            norm = vector @ base @ vector
+            atom = {}
+            for variable, matrix in zip(variables, shifted):
+                value = float(vector @ matrix @ vector / norm)
+                # Rounding produces candidates only; exact verification below
+                # rejects any genuine small atom that this proposal loses.
+                atom[variable] = (
+                    sp.S.Zero
+                    if abs(value) <= tol
+                    else sp.nsimplify(value, tolerance=min(tol, 1e-12))
+                )
             atoms.append(atom)
-
         atoms = _dedupe_atoms(atoms, variables)
-        weights = _solve_weights(atoms, basis, moment_matrix)
+        weights = _solve_weights(atoms, basis, moment_matrix, indices, constant_index)
         verified, residuals = verify_atom_measure(
-            atoms,
-            weights,
-            basis,
-            moment_matrix,
-            variables,
+            atoms, weights, basis, moment_matrix, variables
         )
-        return AtomExtractionResult(
-            True,
-            rank_m,
-            rank_prev,
-            atoms,
-            weights,
-            "Extracted atoms from multiplication matrices.",
-            mults,
-            verified,
-            residuals,
-        )
-
-    verified, residuals = (
-        verify_atom_measure(
-            atoms,
-            weights,
-            basis,
-            moment_matrix,
-            variables,
-        )
-        if atoms and weights
-        else (False, None)
-    )
+        if verified:
+            return AtomExtractionResult(
+                True,
+                rank_m,
+                rank_prev,
+                atoms,
+                weights,
+                "Extracted and verified a joint atomic measure.",
+                mults,
+                True,
+                residuals,
+            )
     return AtomExtractionResult(
-        flat,
+        True,
         rank_m,
         rank_prev,
         atoms,
         weights,
-        "Flatness detected but atom extraction was unavailable.",
+        "Joint atom extraction remained unverified.",
         mults,
-        verified,
+        False,
         residuals,
     )
 
@@ -399,28 +416,41 @@ def verify_atom_measure(
     moment_matrix,
     vars,
 ):
+    """Verify a positive real atomic measure against every supplied moment.
+
+    Numerical reconstruction generates proposals during extraction. Verification
+    compares the original stored moments without rounding them to nearby exact
+    values, and requires a complete symmetric matrix for the supplied basis.
+    """
     if not atoms or not weights:
         return False, {"message": sp.Symbol("no_atoms")}
-
     if len(weights) != len(atoms):
         return False, {"message": sp.Symbol("weight_count_mismatch")}
+    size = len(basis)
+    if not size or moment_matrix.shape != (size, size):
+        return False, {"message": sp.Symbol("moment_shape_mismatch")}
+    if moment_matrix != moment_matrix.T:
+        return False, {"message": sp.Symbol("nonsymmetric_moments")}
+    if any(sp.sympify(weight).is_nonnegative is not True for weight in weights):
+        return False, {"message": sp.Symbol("nonpositive_measure")}
+    if any(
+        variable not in atom or sp.sympify(atom[variable]).is_real is not True
+        for atom in atoms
+        for variable in vars
+    ):
+        return False, {"message": sp.Symbol("nonreal_or_incomplete_atoms")}
 
     residuals = {}
     verified = True
-    size = min(len(basis), moment_matrix.rows, moment_matrix.cols)
     for row in range(size):
         for col in range(row, size):
             term = sp.expand(basis[row] * basis[col])
-            lhs = sp.nsimplify(
-                sum(
-                    weight * sp.expand(term.subs(atom))
-                    for weight, atom in zip(weights, atoms)
-                )
+            lhs = sum(
+                weight * term.subs(atom, simultaneous=True)
+                for weight, atom in zip(weights, atoms)
             )
-            rhs = sp.nsimplify(moment_matrix[row, col])
-            residual = sp.simplify(lhs - rhs)
+            residual = sp.simplify(lhs - moment_matrix[row, col])
             key = f"{sp.sstr(basis[row])}*{sp.sstr(basis[col])}"
             residuals[key] = residual
             verified = verified and residual == 0
-
     return verified, residuals

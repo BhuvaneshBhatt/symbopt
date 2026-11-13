@@ -1,5 +1,6 @@
 import sympy as sp
-from symbopt import clear_symbolic_caches, cache_info, algebraize
+
+from symbopt import algebraize, cache_info, clear_symbolic_caches
 from symbopt.polynomial_structure import build_sparsity_graph, build_symmetry_report
 from symbopt.sos_program import monomial_basis, sparse_monomial_basis
 
@@ -53,7 +54,7 @@ def test_sparsity_graph_accepts_single_expression_and_symbol():
     assert one_var.variables == [x]
 
 
-def test_symmetry_report_accepts_unconstrained_shorthand_and_single_constraint():
+def test_symmetry_input_forms():
     x, y = sp.symbols("x y", real=True)
     report = build_symmetry_report(x**2 + y**2, [x, y])
     assert set(report.even_variables) == {x, y}

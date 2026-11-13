@@ -1,24 +1,30 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
+from scipy.optimize import linprog
 
 from .array_validation import (
     checked_bounds as _checked_bounds,
+)
+from .array_validation import (
     finite_array as _finite_array,
+)
+from .array_validation import (
     matrix_rhs as _matrix_rhs,
 )
-from scipy.optimize import linprog
 
 
 @dataclass
 class LPResult:
+    """Numerical linear-program status, candidate point, objective and basis diagnostics."""
+
     status: str
     x: np.ndarray
     objective: float
-    basis: List[int]
+    basis: list[int]
     iterations: int
     message: str
 
@@ -82,7 +88,7 @@ def simplex(c, A_ub=None, b_ub=None, max_iter: int = 200):
             return LPResult(
                 "unbounded",
                 np.zeros(cols),
-                np.inf,
+                -np.inf,
                 basis,
                 iteration,
                 "LP is unbounded in the selected entering direction.",
@@ -142,7 +148,9 @@ def revised_simplex(c, A_ub=None, b_ub=None, max_iter: int = 200):
             )
 
         reduced = costs - dual @ augmented
-        nonbasic = [index for index in range(cols) if index not in basis]
+        # Slack columns can leave and re-enter the basis. Omitting them can
+        # stop at a feasible vertex with a remaining descent direction.
+        nonbasic = [index for index in range(cols + rows) if index not in basis]
         entering = min(nonbasic, key=lambda index: reduced[index]) if nonbasic else None
 
         if entering is None or reduced[entering] >= -1e-10:
@@ -169,7 +177,7 @@ def revised_simplex(c, A_ub=None, b_ub=None, max_iter: int = 200):
             return LPResult(
                 "unbounded",
                 np.zeros(cols),
-                np.inf,
+                -np.inf,
                 basis,
                 iteration,
                 "LP is unbounded in the selected entering direction.",
@@ -196,7 +204,7 @@ def solve_lp(
     A_eq=None,
     b_eq=None,
     maximize: bool = False,
-    bounds: Optional[Sequence[Tuple[Optional[float], Optional[float]]]] = None,
+    bounds: Sequence[tuple[float | None, float | None]] | None = None,
 ):
     """Solve a general continuous linear program.
 

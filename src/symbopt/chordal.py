@@ -1,16 +1,20 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from itertools import combinations
-from typing import List, Set, Tuple
+
 import numpy as np
 
 
 @dataclass
 class SparsityGraph:
-    n: int
-    edges: Set[Tuple[int, int]]
+    """An undirected graph of variable or matrix-coordinate interactions."""
 
-    def neighbors(self, i: int) -> Set[int]:
+    n: int
+    edges: set[tuple[int, int]]
+
+    def neighbors(self, i: int) -> set[int]:
+        """Return the adjacent vertices of the requested graph vertex."""
         out = set()
         for a, b in self.edges:
             if a == i:
@@ -22,12 +26,15 @@ class SparsityGraph:
 
 @dataclass
 class ChordalDecomposition:
+    """Chordal extension, maximal cliques and their overlap structure."""
+
     n: int
-    cliques: List[List[int]]
-    separators: List[List[int]]
+    cliques: list[list[int]]
+    separators: list[list[int]]
     message: str
 
     def pretty(self) -> str:
+        """Format the stored mathematical result and diagnostic metadata for inspection."""
         return "\n".join(
             [
                 f"n: {self.n}",
@@ -39,6 +46,7 @@ class ChordalDecomposition:
 
 
 def matrix_sparsity_graph(M: np.ndarray, tol: float = 1e-12) -> SparsityGraph:
+    """Build the undirected off-diagonal support graph of a symmetric matrix."""
     M = np.asarray(M, dtype=float)
     n = M.shape[0]
     edges = set()
@@ -49,7 +57,7 @@ def matrix_sparsity_graph(M: np.ndarray, tol: float = 1e-12) -> SparsityGraph:
     return SparsityGraph(n=n, edges=edges)
 
 
-def _mcs_order(graph: SparsityGraph) -> List[int]:
+def _mcs_order(graph: SparsityGraph) -> list[int]:
     weights = {i: 0 for i in range(graph.n)}
     rem = set(range(graph.n))
     order = []
@@ -64,6 +72,7 @@ def _mcs_order(graph: SparsityGraph) -> List[int]:
 
 
 def chordal_extension(graph: SparsityGraph) -> ChordalDecomposition:
+    """Construct a chordal extension and its clique decomposition."""
     order = _mcs_order(graph)
     pos = {v: i for i, v in enumerate(order)}
     adj = {i: set(graph.neighbors(i)) for i in range(graph.n)}
@@ -93,4 +102,5 @@ def chordal_extension(graph: SparsityGraph) -> ChordalDecomposition:
 
 
 def suggest_psd_blocks(M: np.ndarray, tol: float = 1e-12) -> ChordalDecomposition:
+    """Suggest PSD blocks from the matrix sparsity graph and chordal fill."""
     return chordal_extension(matrix_sparsity_graph(M, tol=tol))

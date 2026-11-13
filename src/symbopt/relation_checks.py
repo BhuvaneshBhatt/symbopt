@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Mapping, Tuple
+from collections.abc import Mapping
 
 import sympy as sp
 from sympy.core.relational import (
@@ -12,10 +12,10 @@ from sympy.core.relational import (
     StrictLessThan,
 )
 
-from .numeric_utils import real_part
+from .numeric_utils import eval_float
 
 
-def normalize_relational(rel: Relational) -> Tuple[str, sp.Expr]:
+def normalize_relational(rel: Relational) -> tuple[str, sp.Expr]:
     """Return a relation kind and a residual normalized around zero."""
     residual = sp.expand(rel.lhs - rel.rhs)
     if isinstance(rel, Equality):
@@ -38,9 +38,10 @@ def relation_holds(
     values: Mapping[sp.Symbol, object],
     tol: float = 1e-7,
 ) -> bool:
+    """Screen a finite real residual with the supplied feasibility tolerance."""
     kind, residual = normalize_relational(rel)
     try:
-        value = real_part(residual.subs(values))
+        value = eval_float(residual.subs(values))
     except (TypeError, ValueError, ArithmeticError, NotImplementedError):
         return False
 

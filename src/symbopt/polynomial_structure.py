@@ -1,17 +1,22 @@
 from __future__ import annotations
+
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Iterable, List, Sequence, Set, Tuple
+
 import sympy as sp
 from sympy.polys.polyerrors import PolynomialError
 
 
 @dataclass
 class VariableInteractionGraph:
-    variables: List[sp.Symbol]
-    edges: Set[Tuple[sp.Symbol, sp.Symbol]]
+    """An undirected graph of variable or matrix-coordinate interactions."""
 
-    def neighbors(self, v: sp.Symbol) -> Set[sp.Symbol]:
+    variables: list[sp.Symbol]
+    edges: set[tuple[sp.Symbol, sp.Symbol]]
+
+    def neighbors(self, v: sp.Symbol) -> set[sp.Symbol]:
+        """Return the adjacent vertices of the requested graph vertex."""
         out = set()
         for a, b in self.edges:
             if a == v:
@@ -20,7 +25,8 @@ class VariableInteractionGraph:
                 out.add(a)
         return out
 
-    def connected_components(self) -> List[List[sp.Symbol]]:
+    def connected_components(self) -> list[list[sp.Symbol]]:
+        """Return the disjoint connected components of the stored interaction graph."""
         rem = set(self.variables)
         comps = []
         while rem:
@@ -32,8 +38,7 @@ class VariableInteractionGraph:
                 for w in self.neighbors(u):
                     if w not in comp:
                         comp.add(w)
-                        if w in rem:
-                            rem.remove(w)
+                        rem.discard(w)
                         stack.append(w)
             comps.append(sorted(comp, key=sp.sstr))
         return comps
@@ -41,11 +46,14 @@ class VariableInteractionGraph:
 
 @dataclass
 class SymmetryReport:
-    even_variables: List[sp.Symbol]
-    permutation_pairs: List[Tuple[sp.Symbol, sp.Symbol]]
+    """Detected sign and permutation symmetries with their polynomial support metadata."""
+
+    even_variables: list[sp.Symbol]
+    permutation_pairs: list[tuple[sp.Symbol, sp.Symbol]]
     message: str
 
     def pretty(self) -> str:
+        """Format the stored mathematical result and diagnostic metadata for inspection."""
         return "\n".join(
             [
                 f"even_variables: {[sp.sstr(v) for v in self.even_variables]}",
@@ -83,7 +91,7 @@ def build_sparsity_graph(
     """
     exprs = _as_exprs(exprs)
     vars = _as_symbols(vars)
-    edges: Set[Tuple[sp.Symbol, sp.Symbol]] = set()
+    edges: set[tuple[sp.Symbol, sp.Symbol]] = set()
     vset = set(vars)
     for expr in exprs:
         try:
@@ -106,7 +114,8 @@ def build_sparsity_graph(
     return VariableInteractionGraph(vars, edges)
 
 
-def monomial_support(term: sp.Expr, vars: Sequence[sp.Symbol]) -> Set[sp.Symbol]:
+def monomial_support(term: sp.Expr, vars: Sequence[sp.Symbol]) -> set[sp.Symbol]:
+    """Extract exponent support in the specified polynomial coordinates."""
     try:
         mon = sp.Poly(term, *vars).monoms()[0]
         return {v for v, e in zip(vars, mon) if e != 0}
@@ -124,7 +133,8 @@ def sparse_supported_basis(
     basis: Sequence[sp.Expr],
     components: Sequence[Sequence[sp.Symbol]],
     vars: Sequence[sp.Symbol],
-) -> List[sp.Expr]:
+) -> list[sp.Expr]:
+    """Retain basis monomials supported inside the detected variable components."""
     comps = [set(c) for c in components]
     out = []
     for b in basis:
@@ -136,7 +146,8 @@ def sparse_supported_basis(
 
 def detect_even_symmetry(
     exprs: Sequence[sp.Expr], vars: Sequence[sp.Symbol]
-) -> List[sp.Symbol]:
+) -> list[sp.Symbol]:
+    """Find coordinates whose exponents are even in every supplied polynomial term."""
     out = []
     for v in vars:
         ok = True
@@ -161,7 +172,8 @@ def detect_even_symmetry(
 
 def find_swap_symmetries(
     exprs: Sequence[sp.Expr], vars: Sequence[sp.Symbol]
-) -> List[Tuple[sp.Symbol, sp.Symbol]]:
+) -> list[tuple[sp.Symbol, sp.Symbol]]:
+    """Find supported coordinate transpositions that preserve the supplied polynomials."""
     pairs = []
     for a, b in combinations(vars, 2):
         swap = {a: b, b: a}
@@ -224,6 +236,7 @@ def reduce_sign_symmetry(
     vars: Sequence[sp.Symbol],
     box_bounds=None,
 ):
+    """Apply the supported square-coordinate reduction for detected even symmetries."""
     exprs = [objective] + [
         sp.expand(c.lhs - c.rhs)
         for c in constraints

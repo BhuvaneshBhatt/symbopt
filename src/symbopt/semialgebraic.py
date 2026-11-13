@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from functools import lru_cache
 import importlib
 import inspect
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
+from functools import lru_cache
 from importlib import metadata as importlib_metadata
-from typing import List, Mapping, Optional, Sequence, Tuple
 
 import sympy as sp
 from sympy.core.relational import Relational
@@ -18,7 +18,7 @@ from .diagnostics import DiagnosticKind, SolverDiagnostic
 class SemialgCapabilities:
     """Features advertised by the installed optional :mod:`semialg` backend."""
 
-    version: Optional[str]
+    version: str | None
     has_optimizer: bool
     supports_cert_policy: bool
     supports_range_limit: bool
@@ -28,6 +28,7 @@ class SemialgCapabilities:
     result_has_diagnostics: bool
 
     def as_dict(self) -> Mapping[str, object]:
+        """Return the stored capability or precision metadata as a dictionary."""
         return {
             "version": self.version,
             "has_optimizer": self.has_optimizer,
@@ -45,12 +46,12 @@ class SemialgOptResult:
     """Exact optimization result converted from the optional semialg backend."""
 
     value: sp.Expr
-    points: Tuple[Mapping[sp.Symbol, sp.Expr], ...]
+    points: tuple[Mapping[sp.Symbol, sp.Expr], ...]
     attained: bool
     method: str
     diagnostics: Mapping[str, object] = field(default_factory=dict)
-    certified: Optional[bool] = None
-    backend_version: Optional[str] = None
+    certified: bool | None = None
+    backend_version: str | None = None
     backend_capabilities: Mapping[str, object] = field(default_factory=dict)
 
 
@@ -65,10 +66,10 @@ class SemialgRangeResult:
 
     formula: sp.Expr
     value_symbol: sp.Symbol
-    infimum: Optional[sp.Expr]
-    supremum: Optional[sp.Expr]
-    infimum_attained: Optional[bool]
-    supremum_attained: Optional[bool]
+    infimum: sp.Expr | None
+    supremum: sp.Expr | None
+    infimum_attained: bool | None
+    supremum_attained: bool | None
     method: str = "semialg_function_range"
 
 
@@ -76,14 +77,14 @@ class SemialgRangeResult:
 class SemialgProof:
     """Exact CAD/QE proof result for a candidate global lower bound."""
 
-    proven: Optional[bool]
+    proven: bool | None
     method: str = "unknown"
-    query: Optional[sp.Expr] = None
-    witness: Optional[Mapping[sp.Symbol, sp.Expr]] = None
+    query: sp.Expr | None = None
+    witness: Mapping[sp.Symbol, sp.Expr] | None = None
 
 
 def _add_diag(
-    diagnostics: Optional[List[SolverDiagnostic]],
+    diagnostics: list[SolverDiagnostic] | None,
     stage: str,
     kind: DiagnosticKind,
     exc: BaseException,
@@ -106,7 +107,7 @@ def _load_module(backend=None):
     return backend if backend is not None else importlib.import_module("semialg")
 
 
-def _backend_version(module, *, installed: bool) -> Optional[str]:
+def _backend_version(module, *, installed: bool) -> str | None:
     value = getattr(module, "__version__", None)
     if value is not None:
         return str(value)
@@ -140,6 +141,15 @@ def _detect_capabilities(module, *, installed: bool) -> SemialgCapabilities:
     except (TypeError, ValueError):
         range_params = set()
     result_type = getattr(module, "OptimizationResult", None)
+    if result_type is None and installed:
+        # semialg >= 1.3 keeps result records in their owning public specialist
+        # namespace rather than duplicating them at the package root.
+        try:
+            result_module = importlib.import_module("semialg.optimization_results")
+        except ImportError:
+            result_module = None
+        if result_module is not None:
+            result_type = getattr(result_module, "OptimizationResult", None)
     fields = set(getattr(result_type, "__dataclass_fields__", {}))
     return SemialgCapabilities(
         version=_backend_version(module, installed=installed),
@@ -169,7 +179,7 @@ def semialg_available() -> bool:
     """Return whether the installed backend exposes the APIs symbopt uses.
 
     ``semialg`` lazily imports some submodules, so importing its root package is
-    not sufficient to establish usability.  Probe the decision and optimization
+    not sufficient to establish useability. Probe the decision and optimization
     entry points that symbopt relies on and treat missing transitive dependencies
     as an unavailable optional backend.
     """
@@ -215,7 +225,7 @@ def _formula_ok(formula: sp.Expr, variables) -> bool:
         return True
     if isinstance(formula, Relational):
         return _rational_expr(formula.lhs - formula.rhs, variables)
-    if isinstance(formula, sp.And) or isinstance(formula, sp.Or):
+    if isinstance(formula, (sp.And, sp.Or)):
         return all(_formula_ok(arg, variables) for arg in formula.args)
     if isinstance(formula, sp.Not):
         return _formula_ok(formula.args[0], variables)
@@ -241,8 +251,8 @@ def _sat_call(formula, variables, backend=None):
     return module.is_satisfiable(formula, tuple(variables), return_result=True)
 
 
-def _optional_bool(value) -> Optional[bool]:
-    """Convert backend proof states without collapsing unknown into False."""
+def _optional_bool(value) -> bool | None:
+    """Convert backend proof states."""
     if value is True or value is sp.true:
         return True
     if value is False or value is sp.false:
@@ -255,9 +265,9 @@ def _optional_bool(value) -> Optional[bool]:
 def exact_feasible(
     constraints,
     variables,
-    diagnostics: Optional[List[SolverDiagnostic]] = None,
+    diagnostics: list[SolverDiagnostic] | None = None,
     backend=None,
-) -> Optional[bool]:
+) -> bool | None:
     """Decide exact semialgebraic feasibility when the backend is applicable."""
     formula = make_formula(constraints)
     variables = tuple(variables)
@@ -289,7 +299,7 @@ def exact_feasible(
 def prune_redundant(
     constraints: Sequence[Relational],
     variables,
-    diagnostics: Optional[List[SolverDiagnostic]] = None,
+    diagnostics: list[SolverDiagnostic] | None = None,
     max_checks: int = 12,
     backend=None,
 ):
@@ -346,9 +356,9 @@ def pattern_feasible(
     equalities,
     variables,
     pattern,
-    diagnostics: Optional[List[SolverDiagnostic]] = None,
+    diagnostics: list[SolverDiagnostic] | None = None,
     backend=None,
-) -> Optional[bool]:
+) -> bool | None:
     """Check whether a requested KKT active subset is exactly feasible."""
     constraints = [sp.Ge(expr, 0) for expr in inequalities]
     constraints.extend(sp.Eq(expr, 0) for expr in equalities)
@@ -381,7 +391,7 @@ def _sympy_exact_points(equations, variables):
 def solve_exact_points(
     equations,
     variables,
-    diagnostics: Optional[List[SolverDiagnostic]] = None,
+    diagnostics: list[SolverDiagnostic] | None = None,
     count: int = 64,
     backend=None,
 ):
@@ -404,7 +414,13 @@ def solve_exact_points(
     except (ImportError, NotImplementedError) as exc:
         _add_diag(diagnostics, "rur_solve", DiagnosticKind.UNSUPPORTED, exc)
         return _sympy_exact_points(equations, variables)
-    except Exception as exc:
+    except (
+        TypeError,
+        ValueError,
+        RuntimeError,
+        ArithmeticError,
+        PolynomialError,
+    ) as exc:
         _add_diag(
             diagnostics,
             "rur_solve",
@@ -434,7 +450,7 @@ def certify_global_min(
     variables,
     point,
     value,
-    diagnostics: Optional[List[SolverDiagnostic]] = None,
+    diagnostics: list[SolverDiagnostic] | None = None,
     backend=None,
 ) -> SemialgProof:
     """Prove global minimality by excluding every feasible lower value."""
@@ -480,15 +496,15 @@ def minimize_exact(
     objective,
     constraints,
     variables,
-    diagnostics: Optional[List[SolverDiagnostic]] = None,
+    diagnostics: list[SolverDiagnostic] | None = None,
     backend=None,
     *,
     certification: str = "auto",
-    range_cost_limit: Optional[int] = None,
-) -> Optional[SemialgOptResult]:
+    range_cost_limit: int | None = None,
+) -> SemialgOptResult | None:
     """Run semialg's exact semialgebraic minimizer for suitable problems.
 
-    The adapter discovers optimizer keyword support at runtime.  In particular,
+    The adapter discovers optimizer keyword support at runtime. In particular,
     no dimension ceiling is imposed by symbopt; dimensional support belongs to
     the installed semialg backend.
     """
@@ -514,7 +530,7 @@ def minimize_exact(
             return None
         if certification != "auto" and not capabilities.supports_cert_policy:
             raise NotImplementedError(
-                "installed semialg does not expose optimization certification policies"
+                "installed semialg does not expose optimisation certification policies"
             )
         if range_cost_limit is not None and not capabilities.supports_range_limit:
             raise NotImplementedError(
@@ -565,7 +581,7 @@ def minimize_exact(
     )
 
 
-def _truth_value(result) -> Optional[bool]:
+def _truth_value(result) -> bool | None:
     direct = _optional_bool(result)
     if direct is not None:
         return direct
@@ -580,15 +596,15 @@ def prove_nonnegative_exact(
     expr,
     constraints,
     variables,
-    diagnostics: Optional[List[SolverDiagnostic]] = None,
+    diagnostics: list[SolverDiagnostic] | None = None,
     backend=None,
 ) -> SemialgProof:
     """Prove ``expr >= 0`` exactly with semialg sign/CAD reasoning.
 
     For an unconstrained polynomial this uses semialg's dedicated
-    ``prove_nonnegative`` sign prover.  With semialgebraic constraints, the same
+    ``prove_nonnegative`` sign prover. With semialgebraic constraints, the same
     proposition is expressed as an exact implication because the dedicated sign
-    API is global rather than assumption-parameterized.
+    API is global rather than assumption-parametrized.
     """
     variables = tuple(variables)
     expr = sp.expand(sp.sympify(expr))
@@ -645,12 +661,12 @@ def function_range_exact(
     objective,
     constraints,
     variables,
-    diagnostics: Optional[List[SolverDiagnostic]] = None,
+    diagnostics: list[SolverDiagnostic] | None = None,
     backend=None,
-) -> Optional[SemialgRangeResult]:
+) -> SemialgRangeResult | None:
     """Compute an exact semialgebraic objective range and its endpoints.
 
-    ``semialg.function_range`` performs the image/QE step.  The resulting formula
+    ``semialg.function_range`` performs the image/QE step. The resulting formula
     may be disconnected or otherwise non-interval, so endpoint extraction is
     delegated back to semialg's exact one-variable minimizer/maximizer instead of
     trying to parse the Boolean formula structurally in ``symbopt``.

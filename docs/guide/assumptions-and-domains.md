@@ -7,6 +7,8 @@
 Use `real=True` when practical:
 
 ```python
+import sympy as sp
+
 x = sp.symbols("x", real=True)
 ```
 
@@ -39,5 +41,4 @@ The interval evaluator checks domains and singularities. Examples include:
 - tangent crossing a pole,
 - inverse trigonometric functions outside their real domains.
 
-A box whose entire domain is invalid is rejected. A box that straddles a
-singularity is subdivided or reported as uncertain.
+A box whose entire domain is invalid is rejected. A box that straddles a singularity is subdivided or reported as uncertain.

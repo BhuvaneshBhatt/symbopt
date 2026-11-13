@@ -7,7 +7,7 @@ from symbopt.intervals import contract_equalities
 from symbopt.problem_models import IntervalBox
 
 
-def test_interval_newton_contracts_scalar_root_without_losing_it():
+def test_interval_newton_root_ownership():
     x = sp.symbols("x", real=True)
     box = IntervalBox({x: (1.0, 2.0)})
     result = contract_equalities(box, [x**2 - 2], [x])

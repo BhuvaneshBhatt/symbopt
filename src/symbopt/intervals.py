@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from functools import lru_cache
-from typing import Dict, List, Sequence, Tuple
 import heapq
 import math
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+from functools import lru_cache
 
 import sympy as sp
-from sympy.polys.polyerrors import PolynomialError
 from sympy.core.relational import Relational
+from sympy.polys.polyerrors import PolynomialError
 
-from .problem_models import IntervalBox, IntervalResult
 from .numeric_utils import eval_float
+from .precision import finite_midpoint, outward_float
+from .problem_models import IntervalBox, IntervalResult
 from .relation_checks import normalize_relational, relation_holds
 from .verified_intervals import (
     EvalConfig,
@@ -23,8 +24,9 @@ from .verified_intervals import (
 
 
 @lru_cache(maxsize=4096)
-def _precondition_forms(expr: sp.Expr) -> Tuple[sp.Expr, ...]:
+def _precondition_forms(expr: sp.Expr) -> tuple[sp.Expr, ...]:
     forms = [expr]
+    limit = None
     transforms = (sp.factor_terms, sp.cancel, sp.trigsimp)
     for transform in transforms:
         try:
@@ -35,35 +37,36 @@ def _precondition_forms(expr: sp.Expr) -> Tuple[sp.Expr, ...]:
             continue
         if candidate.free_symbols != expr.free_symbols:
             continue
-        if sp.count_ops(candidate) <= max(2, int(1.25 * sp.count_ops(expr))):
+        if limit is None:
+            limit = max(2, int(1.25 * sp.count_ops(expr)))
+        if sp.count_ops(candidate) <= limit:
             forms.append(candidate)
-    unique = []
-    seen = set()
-    for form in forms:
-        key = sp.srepr(form)
-        if key not in seen:
-            seen.add(key)
-            unique.append(form)
-    return tuple(unique)
+    return tuple(dict.fromkeys(forms))
 
 
 @dataclass(frozen=True)
 class IntervalEvaluator:
+    """Compiled verified interval expressions with reusable dependency information."""
+
     expr: sp.Expr
-    variables: Tuple[sp.Symbol, ...]
-    forms: Tuple[sp.Expr, ...]
-    config: EvalConfig = EvalConfig()
+    variables: tuple[sp.Symbol, ...]
+    forms: tuple[sp.Expr, ...]
+    config: EvalConfig = field(default_factory=EvalConfig)
 
     @classmethod
-    def compile(cls, expr: sp.Expr, config: EvalConfig = EvalConfig()):
+    def compile(cls, expr: sp.Expr, config: EvalConfig | None = None):
+        """Compile an expression for reuse by the verified interval backend."""
         variables = tuple(sorted(expr.free_symbols, key=sp.sstr))
-        return cls(expr, variables, _precondition_forms(expr), config)
+        actual_config = config if config is not None else EvalConfig()
+        return cls(expr, variables, _precondition_forms(expr), actual_config)
 
     @property
     def dependencies(self):
+        """Return the coordinates on which the compiled expression depends."""
         return frozenset(self.variables)
 
     def evaluate(self, box: IntervalBox) -> VerifiedBound:
+        """Evaluate a compiled expression on a box with the configured enclosure policy."""
         bounds = tuple(box.bounds[var] for var in self.variables)
         primary = enclose_expression(self.expr, self.variables, bounds, self.config)
         # Algebraically transformed forms are used only when the original domain
@@ -81,17 +84,21 @@ class IntervalEvaluator:
 
 @dataclass(frozen=True)
 class EqualityCorrection:
+    """Candidate equality correction and its interval-contraction verification data."""
+
     symbol: sp.Symbol
     expression: sp.Expr
 
 
 @dataclass(frozen=True)
 class ConstraintEval:
+    """A constraint enclosure together with its feasibility and boundary classification."""
+
     relation: Relational
     kind: str
     residual: sp.Expr
     evaluator: IntervalEvaluator
-    equality_corrections: Tuple[EqualityCorrection, ...] = ()
+    equality_corrections: tuple[EqualityCorrection, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -138,10 +145,17 @@ def _iscale(c: float, a):
 def _idiv_point_by_interval(value, denom):
     if denom[0] <= 0 <= denom[1]:
         return None
-    inv = (1.0 / denom[1], 1.0 / denom[0])
-    if inv[0] > inv[1]:
-        inv = (inv[1], inv[0])
-    return _imul(value, inv)
+    if not (math.isfinite(denom[0]) and math.isfinite(denom[1])):
+        return None
+    # Direct quotients need one outward rounding each. Multiplying by a rounded
+    # reciprocal can accumulate two rounding errors before the final enclosure.
+    values = (
+        value[0] / denom[0],
+        value[0] / denom[1],
+        value[1] / denom[0],
+        value[1] / denom[1],
+    )
+    return _outward(min(values), -1), _outward(max(values), 1)
 
 
 def _intersect_interval(a, b):
@@ -150,7 +164,7 @@ def _intersect_interval(a, b):
     return None if low > high else (low, high)
 
 
-def _point_interval(expr: sp.Expr, point: Dict[sp.Symbol, float], config: EvalConfig):
+def _point_interval(expr: sp.Expr, point: dict[sp.Symbol, float], config: EvalConfig):
     evaluator = IntervalEvaluator.compile(expr, config)
     box = IntervalBox({symbol: (value, value) for symbol, value in point.items()})
     bound = evaluator.evaluate(box)
@@ -166,7 +180,7 @@ def _univariate_newton_step(
     config: EvalConfig,
 ):
     low, high = box.bounds[variable]
-    midpoint = 0.5 * (low + high)
+    midpoint = finite_midpoint(low, high)
     point = dict(box.midpoint_subs())
     point[variable] = midpoint
     fmid = _point_interval(equation, point, config)
@@ -203,7 +217,7 @@ def _krawczyk_step(
     n = len(variables)
     if n == 0 or len(equations) != n:
         return box, False, False
-    midpoint = {v: 0.5 * sum(box.bounds[v]) for v in variables}
+    midpoint = {v: finite_midpoint(*box.bounds[v]) for v in variables}
     f_intervals = []
     jac = []
     midpoint_jac = np.zeros((n, n), dtype=float)
@@ -221,7 +235,7 @@ def _krawczyk_step(
                 return box, False, False
             interval = (bound.lower, bound.upper)
             row.append(interval)
-            midpoint_jac[i, j] = 0.5 * (bound.lower + bound.upper)
+            midpoint_jac[i, j] = finite_midpoint(bound.lower, bound.upper)
         jac.append(row)
     try:
         C = np.linalg.inv(midpoint_jac)
@@ -330,15 +344,17 @@ def contract_equalities(
 
 @dataclass
 class BoxState:
+    """Branch-and-bound box with objective, feasibility and contraction evidence."""
+
     box: IntervalBox
     objective_bound: VerifiedBound
-    constraint_bounds: Tuple[VerifiedBound, ...]
+    constraint_bounds: tuple[VerifiedBound, ...]
 
 
 def _compile_constraints(
     constraints: Sequence[Relational],
     config: EvalConfig,
-) -> List[ConstraintEval]:
+) -> list[ConstraintEval]:
     """Compile interval residual evaluators and reusable equality corrections."""
     compiled = []
     for relation in constraints:
@@ -436,7 +452,7 @@ def _child_state(
 def _candidate_from_midpoint(
     box: IntervalBox,
     constraints: Sequence[ConstraintEval],
-) -> Dict[sp.Symbol, float]:
+) -> dict[sp.Symbol, float]:
     subs = dict(box.midpoint_subs())
     for _ in range(8):
         changed = False
@@ -474,7 +490,7 @@ def _box_priority(state: BoxState) -> float:
 def _compile_trig_split_info(
     expressions: Sequence[sp.Expr],
     variables: Sequence[sp.Symbol],
-) -> Dict[sp.Symbol, Tuple[bool, bool]]:
+) -> dict[sp.Symbol, tuple[bool, bool]]:
     info = {}
     for variable in variables:
         has_quarter_period = any(
@@ -487,7 +503,7 @@ def _compile_trig_split_info(
 
 
 def _trig_split_points(
-    trig_info: Dict[sp.Symbol, Tuple[bool, bool]],
+    trig_info: dict[sp.Symbol, tuple[bool, bool]],
     box: IntervalBox,
     variable: sp.Symbol,
 ):
@@ -512,7 +528,7 @@ def _trig_split_points(
 
 
 @lru_cache(maxsize=2048)
-def _stationary_points(expr: sp.Expr, variable: sp.Symbol) -> Tuple[float, ...]:
+def _stationary_points(expr: sp.Expr, variable: sp.Symbol) -> tuple[float, ...]:
     if expr.free_symbols - {variable}:
         return ()
     try:
@@ -600,10 +616,10 @@ def _split_score(
 def _split_choice(
     state: BoxState,
     expressions: Sequence[sp.Expr],
-    derivs: Dict[sp.Symbol, IntervalEvaluator],
-    constraint_derivs: Dict[sp.Symbol, Tuple[IntervalEvaluator | None, ...]],
+    derivs: dict[sp.Symbol, IntervalEvaluator],
+    constraint_derivs: dict[sp.Symbol, tuple[IntervalEvaluator | None, ...]],
     constraints: Sequence[ConstraintEval],
-    trig_info: Dict[sp.Symbol, Tuple[bool, bool]] | None = None,
+    trig_info: dict[sp.Symbol, tuple[bool, bool]] | None = None,
 ):
     box = state.box
     if trig_info is None:
@@ -611,9 +627,12 @@ def _split_choice(
     scores = {}
     special_points = {}
     for variable in box.bounds:
+        low, high = box.bounds[variable]
+        if not low < finite_midpoint(low, high) < high:
+            continue
         trig_points = _trig_split_points(trig_info, box, variable)
         symbolic_points = _symbolic_split_points(expressions, box, variable)
-        points = sorted(set([*trig_points, *symbolic_points]))
+        points = sorted({*trig_points, *symbolic_points})
         special_points[variable] = points
         scores[variable] = _split_score(
             state,
@@ -623,14 +642,16 @@ def _split_choice(
             constraints,
         ) + (3.0 if points else 0.0)
 
+    if not scores:
+        return None
     best_var = max(scores, key=scores.get)
     low, high = box.bounds[best_var]
     points = special_points[best_var]
     if points:
-        midpoint = 0.5 * (low + high)
+        midpoint = finite_midpoint(low, high)
         split = min(points, key=lambda point: abs(point - midpoint))
     else:
-        split = 0.5 * (low + high)
+        split = finite_midpoint(low, high)
     return best_var, split
 
 
@@ -639,13 +660,16 @@ def _split_state(
     objective: IntervalEvaluator,
     constraints: Sequence[ConstraintEval],
     expressions: Sequence[sp.Expr],
-    trig_info: Dict[sp.Symbol, Tuple[bool, bool]],
-    derivs: Dict[sp.Symbol, IntervalEvaluator],
-    constraint_derivs: Dict[sp.Symbol, Tuple[IntervalEvaluator | None, ...]],
+    trig_info: dict[sp.Symbol, tuple[bool, bool]],
+    derivs: dict[sp.Symbol, IntervalEvaluator],
+    constraint_derivs: dict[sp.Symbol, tuple[IntervalEvaluator | None, ...]],
 ):
-    variable, split = _split_choice(
+    choice = _split_choice(
         state, expressions, derivs, constraint_derivs, constraints, trig_info
     )
+    if choice is None:
+        return None
+    variable, split = choice
     low, high = state.box.bounds[variable]
     left_bounds = dict(state.box.bounds)
     right_bounds = dict(state.box.bounds)
@@ -662,7 +686,7 @@ def _split_state(
 def interval_optimize(
     objective: sp.Expr,
     constraints: Sequence[Relational],
-    box_bounds: Dict[sp.Symbol, Tuple[float, float]],
+    box_bounds: dict[sp.Symbol, tuple[float, float]],
     max_boxes: int = 200,
     tol: float = 1e-3,
     precision: int = 128,
@@ -673,9 +697,10 @@ def interval_optimize(
     available, python-flint/Arb real-ball evaluation with derivative/Taylor
     tightening. Heuristic samples may improve upper bounds but cannot create a
     rigorous lower-bound certificate."""
-    if not isinstance(max_boxes, int) or max_boxes <= 0:
+    objective = sp.sympify(objective)
+    if isinstance(max_boxes, bool) or not isinstance(max_boxes, int) or max_boxes <= 0:
         raise ValueError("max_boxes must be a positive integer.")
-    if not isinstance(precision, int) or precision <= 0:
+    if isinstance(precision, bool) or not isinstance(precision, int) or precision <= 0:
         raise ValueError("precision must be a positive integer.")
     if not isinstance(tol, (int, float)) or not math.isfinite(float(tol)):
         raise ValueError("tol must be a finite positive number.")
@@ -695,8 +720,23 @@ def interval_optimize(
         names = ", ".join(sorted(map(str, missing)))
         raise ValueError(f"Missing finite box bounds for: {names}.")
     initial_box = IntervalBox(dict(box_bounds))
+    source_bounds = tuple(
+        (
+            variable,
+            sp.Rational(lower) if isinstance(lower, sp.Float) else lower,
+            sp.Rational(upper) if isinstance(upper, sp.Float) else upper,
+            isinstance(lower, (int, float)) and isinstance(upper, (int, float)),
+        )
+        for variable, (lower, upper) in box_bounds.items()
+    )
 
     config = EvalConfig(precision=precision)
+    point_config = EvalConfig(
+        precision=precision,
+        use_bernstein=False,
+        use_monotonicity=False,
+        use_taylor=False,
+    )
     objective_eval = IntervalEvaluator.compile(objective, config)
     compiled = _compile_constraints(constraints, config)
     expressions = [objective] + [item.residual for item in compiled]
@@ -748,15 +788,15 @@ def interval_optimize(
             contraction_methods.add(contraction.method)
 
     first = _build_state(initial_box, objective_eval, compiled)
-    pending: List[Tuple[float, int, BoxState]] = [(_box_priority(first), 0, first)]
-    leaves: List[BoxState] = []
+    pending: list[tuple[float, int, BoxState]] = [(_box_priority(first), 0, first)]
+    leaves: list[BoxState] = []
     counter = 0
     processed = 0
     feasible_boxes = 0
     best_upper = float("inf")
-    best_point: Dict[sp.Symbol, float] = {}
+    best_point: dict[sp.Symbol, float] = {}
     upper_rigorous = False
-    closed_lowers: List[float] = []
+    closed_lowers: list[float] = []
     closed_methods = set()
     unresolved_nonrigorous = False
 
@@ -771,15 +811,49 @@ def interval_optimize(
 
         candidate = _candidate_from_midpoint(state.box, compiled)
         try:
-            value = eval_float(objective.subs(candidate))
-            feasible = all(
+            in_box = all(
+                lower
+                <= (candidate[variable] if binary else sp.Rational(candidate[variable]))
+                <= upper
+                for variable, lower, upper, binary in source_bounds
+            )
+            estimate = eval_float(objective.subs(candidate))
+            feasible = in_box and all(
                 relation_holds(relation, candidate, max(1e-8, tol))
                 for relation in constraints
             )
-            if feasible and value < best_upper:
-                best_upper = value
-                best_point = dict(candidate)
-                upper_rigorous = verify_point(constraints, candidate, precision)
+            if feasible and estimate < best_upper:
+                exact_value = objective.subs(
+                    {v: sp.Rational(candidate[v]) for v in objective_eval.variables}
+                )
+                rational_value = exact_value.is_Rational is True
+                value = (
+                    outward_float(exact_value, 1)
+                    if rational_value
+                    else eval_float(exact_value)
+                )
+                point_verified = verify_point(constraints, candidate, precision)
+                value_verified = rational_value
+                if point_verified and not value_verified:
+                    point_enclosure = enclose_expression(
+                        objective,
+                        objective_eval.variables,
+                        tuple(
+                            (candidate[v], candidate[v])
+                            for v in objective_eval.variables
+                        ),
+                        point_config,
+                    )
+                    if (
+                        point_enclosure.rigorous
+                        and point_enclosure.domain == "valid"
+                        and point_enclosure.finite
+                    ):
+                        value, value_verified = point_enclosure.upper, True
+                if value < best_upper:
+                    best_upper = value
+                    best_point = dict(candidate)
+                    upper_rigorous = point_verified and value_verified
         except (TypeError, ValueError, ArithmeticError, NotImplementedError):
             pass
 
@@ -799,8 +873,23 @@ def interval_optimize(
             processed += 1
             continue
 
-        max_width = max(state.box.width(variable) for variable in state.box.bounds)
-        if max_width <= tol:
+        max_width = max(
+            (state.box.width(variable) for variable in state.box.bounds), default=0.0
+        )
+        children = (
+            None
+            if max_width <= tol
+            else _split_state(
+                state,
+                objective_eval,
+                compiled,
+                expressions,
+                trig_info,
+                derivs,
+                constraint_derivs,
+            )
+        )
+        if children is None:
             leaves.append(state)
             if bound.rigorous and bound.domain == "valid":
                 closed_lowers.append(bound.lower)
@@ -810,16 +899,7 @@ def interval_optimize(
             processed += 1
             continue
 
-        left, right = _split_state(
-            state,
-            objective_eval,
-            compiled,
-            expressions,
-            trig_info,
-            derivs,
-            constraint_derivs,
-        )
-        for child in (left, right):
+        for child in children:
             if equality_equations:
                 contraction = contract_equalities(
                     child.box,

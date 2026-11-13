@@ -3,9 +3,9 @@ import sympy as sp
 from symbopt import algebraize
 from symbopt.algebraic_numbers import (
     algebraic_compare,
-    isolating_interval,
     exactify,
     is_fixed_real_algebraic,
+    isolating_interval,
 )
 
 
@@ -37,7 +37,7 @@ def test_repeated_rootof_reuses_single_exact_branch_lift():
     assert len(records) == 1
 
 
-def test_algebraic_number_input_is_preserved_as_exact_algebraic_value():
+def test_algebraic_input_identity():
     value = sp.AlgebraicNumber(sp.sqrt(2))
     assert exactify(value) == sp.sqrt(2)
     assert is_fixed_real_algebraic(value)

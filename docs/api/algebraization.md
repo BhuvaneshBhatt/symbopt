@@ -1,7 +1,6 @@
 # Algebraization API
 
-The algebraization API converts supported nonpolynomial expressions into lifted
-algebraic problems with explicit graph, domain, and branch constraints.
+The algebraization API converts supported nonpolynomial expressions into lifted algebraic problems with explicit graph, domain, and branch constraints.
 
 ```{autoclass} symbopt.Algebraizer
 :members:

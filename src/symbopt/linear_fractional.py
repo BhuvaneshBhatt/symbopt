@@ -1,32 +1,17 @@
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import sympy as sp
 from sympy.core.relational import Relational
 
+from .algebraic_numbers import algebraic_compare
 from .lp import solve_lp
 from .numeric_utils import eval_float
 from .relation_checks import normalize_relational, relation_holds
-from .algebraic_numbers import algebraic_compare
 from .structural_results import StructuralGlobalResult
-
-
-def _affine_coefficients(expr: sp.Expr, variables: Sequence[sp.Symbol]):
-    expr = sp.expand(expr)
-    try:
-        poly = sp.Poly(expr, *variables)
-    except (sp.PolynomialError, TypeError, ValueError):
-        return None
-    if poly.total_degree() > 1:
-        return None
-    zero = {var: 0 for var in variables}
-    constant = sp.simplify(expr.subs(zero))
-    coeffs = tuple(sp.simplify(sp.diff(expr, var)) for var in variables)
-    if any(component.free_symbols.intersection(variables) for component in coeffs):
-        return None
-    return coeffs, constant
+from .symbolic_cache import affine_coefficients as _affine_coefficients
 
 
 def _symbolic_linear_rels(constraints, variables):
@@ -96,8 +81,8 @@ def _certify_linear_optimum(objective, constraints, variables, point) -> bool:
             active_inequalities.append(residual)
         elif kind != "ge":
             return False
-    lam = sp.symbols(f"_lf_lam0:{len(equalities)}", real=True)
-    mu = sp.symbols(f"_lf_mu0:{len(active_inequalities)}", real=True)
+    lam = tuple(sp.Dummy(f"lam{i}", real=True) for i in range(len(equalities)))
+    mu = tuple(sp.Dummy(f"mu{i}", real=True) for i in range(len(active_inequalities)))
     lagrangian = objective
     for symbol, residual in zip(lam, equalities):
         lagrangian += symbol * residual
@@ -154,6 +139,39 @@ def _affine_extreme(expr, constraints, variables, maximize=False):
     return "optimal", value, point
 
 
+def _strict_lp_feasible(constraints, positive_forms):
+    """Decide rational open-domain feasibility with an exact bounded margin LP.
+
+    Return None when the installed SymPy lacks the rational LP backend or the
+    coefficients are outside its exact rational scope.
+    """
+    try:
+        from sympy.solvers.simplex import InfeasibleLPError, UnboundedLPError, lpmax
+    except ImportError:
+        return None
+    margin = sp.Dummy("strict_margin", real=True)
+    conditions = [*constraints, margin >= 0, margin <= 1]
+    conditions.extend(form >= margin for form in positive_forms)
+    symbols = tuple(
+        sorted(
+            set().union(*(condition.free_symbols for condition in conditions)),
+            key=sp.default_sort_key,
+        )
+    )
+    rows = _symbolic_linear_rels(conditions, symbols)
+    if rows is None or not all(
+        value.is_Rational for _, row, constant in rows for value in (*row, constant)
+    ):
+        return None
+    try:
+        value, _ = lpmax(margin, conditions)
+    except InfeasibleLPError:
+        return False
+    except (UnboundedLPError, TypeError, ValueError):
+        return None
+    return value.is_positive
+
+
 def _fractional_branch(
     objective: sp.Expr,
     constraints: Sequence[Relational],
@@ -161,7 +179,7 @@ def _fractional_branch(
     sign: int,
     *,
     split_branch: bool,
-) -> Optional[StructuralGlobalResult]:
+) -> StructuralGlobalResult | None:
     """Solve one denominator-sign branch on the closure via Charnes--Cooper."""
     numerator, denominator = map(sp.expand, sp.fraction(sp.cancel(objective)))
     numerator_data = _affine_coefficients(numerator, variables)
@@ -186,12 +204,17 @@ def _fractional_branch(
         dcoeff = tuple(-value for value in dcoeff)
         dconst = -dconst
 
-    yvars = sp.symbols(f"_lf_y0:{len(variables)}", real=True)
-    scale = sp.Symbol("_lf_t", real=True)
+    yvars = tuple(
+        sp.Dummy(f"fractional_y{i}", real=True) for i in range(len(variables))
+    )
+    scale = sp.Dummy("fractional_scale", real=True)
     transformed_constraints = []
+    positive_forms = [scale]
     for kind, coeffs, constant in rows:
         lhs = sp.Add(*[coeff * y for coeff, y in zip(coeffs, yvars)]) + constant * scale
         transformed_constraints.append(sp.Eq(lhs, 0) if kind == "eq" else sp.Ge(lhs, 0))
+        if kind == "gt":
+            positive_forms.append(lhs)
     denominator_norm = (
         sp.Add(*[coeff * y for coeff, y in zip(dcoeff, yvars)]) + dconst * scale
     )
@@ -207,7 +230,8 @@ def _fractional_branch(
         return None
     A, b, Aeq, beq = _linear_arrays(trows)
     objective_data = _affine_coefficients(transformed_objective, all_tvars)
-    assert objective_data is not None
+    if objective_data is None:
+        return None
     coeffs, constant = objective_data
     lp = solve_lp(
         np.asarray([eval_float(value) for value in coeffs], dtype=float),
@@ -218,33 +242,59 @@ def _fractional_branch(
         maximize=False,
         bounds=[(None, None)] * len(yvars) + [(0, None)],
     )
+    exact_point = None
     if lp.status == "unbounded":
-        return StructuralGlobalResult(
-            kind="linear_fractional",
-            value=-sp.oo,
-            points=(),
-            attained=False,
-            certified=True,
-            metadata={
-                "transformation": "Charnes-Cooper",
-                "denominator_sign": sign,
-                "denominator_sign_split": split_branch,
-                "asymptotic": True,
-                "lp_status": "unbounded",
-            },
-        )
-    if lp.status != "optimal":
+        try:
+            from sympy.solvers.simplex import InfeasibleLPError, UnboundedLPError, lpmin
+        except ImportError:
+            return None
+        # Floating-point solvers can discard very small coefficients. Their
+        # status alone is not a recession certificate for the exact problem.
+        if not all(
+            value.is_Rational
+            for _, row, constant in trows
+            for value in (*row, constant)
+        ):
+            return None
+        if not all(value.is_Rational for value in (*coeffs, constant)):
+            return None
+        try:
+            _, exact_point = lpmin(transformed_objective, transformed_constraints)
+        except UnboundedLPError:
+            if _strict_lp_feasible(transformed_constraints, positive_forms) is not True:
+                return None
+            return StructuralGlobalResult(
+                kind="linear_fractional",
+                value=-sp.oo,
+                points=(),
+                attained=False,
+                certified=True,
+                metadata={
+                    "transformation": "Charnes-Cooper",
+                    "denominator_sign": sign,
+                    "denominator_sign_split": split_branch,
+                    "asymptotic": True,
+                    "lp_status": "unbounded",
+                    "unboundedness_proof": "exact rational LP and open-domain feasibility",
+                },
+            )
+        except (InfeasibleLPError, TypeError, ValueError):
+            return None
+    elif lp.status != "optimal":
         return None
 
-    transformed_point = {
-        var: sp.nsimplify(value, rational=True) for var, value in zip(all_tvars, lp.x)
-    }
+    transformed_point = (
+        {var: exact_point.get(var, sp.S.Zero) for var in all_tvars}
+        if exact_point is not None
+        else {
+            var: sp.nsimplify(value, rational=True)
+            for var, value in zip(all_tvars, lp.x)
+        }
+    )
     active = []
     for rel in transformed_constraints:
         kind, residual = normalize_relational(rel)
-        if kind == "eq":
-            active.append(sp.Eq(residual, 0))
-        elif abs(eval_float(residual.subs(transformed_point))) <= 1e-8:
+        if kind == "eq" or abs(eval_float(residual.subs(transformed_point))) <= 1e-8:
             active.append(sp.Eq(residual, 0))
     try:
         sols = sp.solve(active, all_tvars, dict=True, simplify=True)
@@ -276,6 +326,8 @@ def _fractional_branch(
         "transformed_scale": sp.sstr(tvalue),
     }
     if tvalue == 0:
+        if _strict_lp_feasible(transformed_constraints, positive_forms) is not True:
+            return None
         metadata["asymptotic"] = True
         return StructuralGlobalResult(
             kind="linear_fractional",
@@ -301,6 +353,10 @@ def _fractional_branch(
     if split_branch:
         den_value = sp.simplify(denominator.subs(point))
         attained = attained and (sp.ask(sp.Q.positive(sign * den_value)) is True)
+    if not attained and not _strict_lp_feasible(
+        transformed_constraints, positive_forms
+    ):
+        return None
     return StructuralGlobalResult(
         kind="linear_fractional",
         value=original_value,
@@ -327,7 +383,7 @@ def _smaller_structural(left, right):
         return left
     if comparison > 0:
         return right
-    points = tuple([*left.points, *right.points])
+    points = (*left.points, *right.points)
     return StructuralGlobalResult(
         kind="linear_fractional",
         value=left.value,
@@ -341,11 +397,27 @@ def _smaller_structural(left, right):
     )
 
 
+def _implied_denominator_exclusion(relation, denominator, variables):
+    """Remove only exclusions proved to follow from the objective denominator."""
+    if not isinstance(relation, sp.Unequality):
+        return False
+    residual = sp.simplify(relation.lhs - relation.rhs)
+    if residual == 0 or residual.free_symbols - set(variables):
+        return False
+    try:
+        quotient = sp.Poly(sp.cancel(denominator / residual), *variables)
+    except sp.PolynomialError:
+        return False
+    # A formal polynomial with an infinite or unresolved coefficient cannot
+    # establish divisibility over a field (for example a parameter at zero).
+    return all(c.is_finite is True for c in quotient.coeffs())
+
+
 def try_linear_fractional(
     objective: sp.Expr,
     constraints: Sequence[Relational],
     variables: Sequence[sp.Symbol],
-) -> Optional[StructuralGlobalResult]:
+) -> StructuralGlobalResult | None:
     """Solve affine linear-fractional programs, splitting denominator signs when needed."""
     variables = tuple(variables)
     if not variables:
@@ -355,6 +427,11 @@ def try_linear_fractional(
         return None
     numerator_data = _affine_coefficients(numerator, variables)
     denominator_data = _affine_coefficients(denominator, variables)
+    constraints = tuple(
+        r
+        for r in constraints
+        if not _implied_denominator_exclusion(r, denominator, variables)
+    )
     rows = _symbolic_linear_rels(constraints, variables)
     if numerator_data is None or denominator_data is None or rows is None:
         return None
@@ -419,6 +496,39 @@ def try_linear_fractional(
     negative = _fractional_branch(
         objective, constraints, variables, -1, split_branch=True
     )
+    # A failed solve is different from a proved empty sign branch. Either
+    # nonempty branch can lower the global infimum, unless -infinity is proved.
+    if not any(
+        branch is not None and branch.value is -sp.oo for branch in (positive, negative)
+    ):
+        for sign, branch in ((1, positive), (-1, negative)):
+            if branch is not None:
+                continue
+            closure = []
+            positive_forms = [sign * denominator]
+            for kind, coeffs, constant in rows:
+                residual = sum(c * v for c, v in zip(coeffs, variables)) + constant
+                closure.append(
+                    sp.Eq(residual, 0) if kind == "eq" else sp.Ge(residual, 0)
+                )
+                if kind == "gt":
+                    positive_forms.append(residual)
+            if _strict_lp_feasible(closure, positive_forms) is not False:
+                return None
+        if positive is None and negative is None:
+            # The nonzero denominator partitions every source point into these
+            # two sign branches. Both open-domain margin LPs proved emptiness.
+            return StructuralGlobalResult(
+                kind="linear_fractional",
+                value=sp.oo,
+                points=(),
+                attained=False,
+                certified=True,
+                metadata={
+                    "denominator_sign_split": True,
+                    "infeasibility_proof": "exact rational margin LPs on both sign branches",
+                },
+            )
     result = _smaller_structural(positive, negative)
     if result is not None and result.metadata.get("denominator_sign_split") is not True:
         result = StructuralGlobalResult(

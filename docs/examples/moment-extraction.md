@@ -26,6 +26,4 @@ atoms = extract_moment_atoms(
 )
 ```
 
-These moments describe a rank-one Dirac measure at \(x=2\). When flatness and
-multiplication-matrix conditions are suitable, the atom extractor recovers the
-support point and weights and then verifies moment residuals.
+These moments describe a rank-one Dirac measure at \(x=2\). When flatness and multiplication-matrix conditions are suitable, the atom extractor recovers the support point and weights and then verifies moment residuals.

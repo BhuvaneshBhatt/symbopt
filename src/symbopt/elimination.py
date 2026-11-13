@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 import sympy as sp
 
 
 def elimination_polynomials(equations, eliminate_vars, keep_vars):
+    """Return supported lexicographic elimination polynomials, or an empty list on failure."""
     try:
         G = sp.groebner(
             list(equations), *(list(eliminate_vars) + list(keep_vars)), order="lex"
@@ -22,13 +24,15 @@ def elimination_polynomials(equations, eliminate_vars, keep_vars):
 
 
 def solve_with_elimination(equations, unknowns):
+    """Try symbolic solving, then return first-coordinate elimination solutions if necessary."""
     try:
         sols = sp.solve(list(equations), list(unknowns), dict=True, simplify=True)
         if sols:
             return sols
     except (TypeError, ValueError, ArithmeticError, NotImplementedError):
         pass
-    # If direct symbolic solving fails, eliminate all but one variable and recover solutions from the reduced system.
+    # Reduced solutions constrain only the retained coordinate; other coordinates
+    # still require recovery by the caller.
     if len(unknowns) >= 2:
         reduced = elimination_polynomials(equations, unknowns[1:], [unknowns[0]])
         if reduced:

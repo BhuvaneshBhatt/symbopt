@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Dict, List, Sequence, Tuple
+from collections.abc import Sequence
+from typing import ClassVar
 
 import sympy as sp
 from sympy import Piecewise
@@ -15,9 +16,9 @@ from sympy.core.relational import (
 from sympy.polys.polyerrors import CoercionFailed, PolynomialError
 from sympy.polys.rootoftools import CRootOf, RootOf
 
-from .problem_models import LiftRecord, LiftedProblem
-from .constraint_reduction import reduce_lifted_problem
 from .algebraic_numbers import isolating_interval
+from .constraint_reduction import reduce_lifted_problem
+from .problem_models import LiftedProblem, LiftRecord
 
 
 class _QuotientReducer:
@@ -45,6 +46,7 @@ class _QuotientReducer:
             self._basis = None
 
     def reduce(self, expr: sp.Expr) -> sp.Expr:
+        """Reduce an expression modulo the fixed finite-quotient relations."""
         expanded = sp.expand(expr)
         if self._basis is None:
             return expanded
@@ -127,12 +129,15 @@ class Algebraizer:
     and branch constraints. Instances retain caches so repeated subexpressions share
     lifts within one transformation."""
 
-    TRANSCENDENTAL_FUNCS = {
+    TRANSCENDENTAL_FUNCS: ClassVar[set[object]] = {
         sp.exp,
         sp.log,
         sp.sin,
         sp.cos,
         sp.tan,
+        sp.cot,
+        sp.sec,
+        sp.csc,
         sp.sinh,
         sp.cosh,
         sp.tanh,
@@ -157,26 +162,31 @@ class Algebraizer:
         self.reduce_after_lift = reduce_after_lift
 
         self._counter = 0
-        self._memo: Dict[sp.Expr, sp.Expr] = {}
+        self._reserved_names = set()
+        self._memo: dict[sp.Expr, sp.Expr] = {}
 
-        self.defining_equalities: List[Equality] = []
-        self.branch_inequalities: List[GreaterThan] = []
-        self.strict_inequalities: List[StrictGreaterThan] = []
-        self.graph_equalities: List[Equality] = []
-        self.graph_inequalities: List[Relational] = []
-        self.auxiliary_variables: List[sp.Symbol] = []
-        self.substitution_map: Dict[sp.Expr, sp.Symbol] = {}
-        self.lift_records: List[LiftRecord] = []
-        self.preprocessing_notes: List[str] = []
-        self._trig_cache: Dict[sp.Expr, Dict[str, sp.Symbol]] = {}
-        self._hyper_cache: Dict[sp.Expr, Dict[str, sp.Symbol]] = {}
-        self._inverse_cache: Dict[sp.Expr, sp.Symbol] = {}
-        self._root_cache: Dict[Tuple[sp.Expr, int], sp.Symbol] = {}
-        self._rootof_cache: Dict[sp.Expr, sp.Symbol] = {}
+        self.defining_equalities: list[Equality] = []
+        self.branch_inequalities: list[GreaterThan] = []
+        self.strict_inequalities: list[StrictGreaterThan] = []
+        self.graph_equalities: list[Equality] = []
+        self.graph_inequalities: list[Relational] = []
+        self.auxiliary_variables: list[sp.Symbol] = []
+        self.substitution_map: dict[sp.Expr, sp.Symbol] = {}
+        self.lift_records: list[LiftRecord] = []
+        self.preprocessing_notes: list[str] = []
+        self._trig_cache: dict[sp.Expr, dict[str, sp.Symbol]] = {}
+        self._hyper_cache: dict[sp.Expr, dict[str, sp.Symbol]] = {}
+        self._inverse_cache: dict[sp.Expr, sp.Symbol] = {}
+        self._root_cache: dict[tuple[sp.Expr, int], sp.Symbol] = {}
+        self._rootof_cache: dict[sp.Expr, sp.Symbol] = {}
 
     def _new_aux(self) -> sp.Symbol:
         self._counter += 1
-        v = sp.Symbol(f"{self.aux_prefix}_{self._counter}", real=True)
+        while f"{self.aux_prefix}_{self._counter}" in self._reserved_names:
+            self._counter += 1
+        name = f"{self.aux_prefix}_{self._counter}"
+        self._reserved_names.add(name)
+        v = sp.Symbol(name, real=True)
         self.auxiliary_variables.append(v)
         return v
 
@@ -193,7 +203,7 @@ class Algebraizer:
         defining_eqs: Sequence[Relational] = (),
         domain_rels: Sequence[Relational] = (),
         dependencies: Sequence[sp.Symbol] = (),
-        metadata: Dict[str, object] | None = None,
+        metadata: dict[str, object] | None = None,
     ) -> None:
         self.lift_records.append(
             LiftRecord(
@@ -241,8 +251,8 @@ class Algebraizer:
 
     def _preprocess_constraints(
         self, constraints: Sequence[Relational]
-    ) -> List[Relational]:
-        out: List[Relational] = []
+    ) -> list[Relational]:
+        out: list[Relational] = []
         for rel in constraints:
             if rel is sp.S.true or rel is True:
                 continue
@@ -260,6 +270,7 @@ class Algebraizer:
         constraints: Sequence[Relational] | None = None,
         variables: Sequence[sp.Symbol] | None = None,
     ) -> LiftedProblem:
+        """Lift a symbolic optimization problem into exact algebraic constraints."""
         raw_constraints = list(constraints or [])
         raw_symbols = set(objective.free_symbols)
         for relation in raw_constraints:
@@ -272,10 +283,12 @@ class Algebraizer:
         parameter_symbols = sorted(
             raw_symbols.difference(original_vars), key=lambda item: item.sort_key()
         )
+        self._reserved_names.update(
+            symbol.name for symbol in (*raw_symbols, *original_vars)
+        )
 
-        # Fast path: already-polynomial inputs require no canonicalization, lifting,
-        # quotient reduction, or auxiliary bookkeeping.  This is deliberately
-        # conservative and falls back for booleans/non-relational inputs.
+        # Polynomial relational inputs can be represented directly; other
+        # inputs continue through canonicalization and lifting below.
         if (
             all(isinstance(relation, Relational) for relation in raw_constraints)
             and not any(
@@ -356,7 +369,7 @@ class Algebraizer:
         )
         all_vars = list(original_vars) + list(self.auxiliary_variables)
 
-        strict_closure_warnings: List[str] = []
+        strict_closure_warnings: list[str] = []
         if self.reduce_after_lift and all_vars:
             quotient_reducer = _QuotientReducer(self.defining_equalities, all_vars)
             reduce_expr = quotient_reducer.reduce
@@ -429,6 +442,7 @@ class Algebraizer:
         return problem_out
 
     def algebraize_expr(self, expr: sp.Expr) -> sp.Expr:
+        """Lift a supported expression and retain its defining graph and domain restrictions."""
         expr = self._preprocess_expr(expr)
         if expr in self._memo:
             return self._memo[expr]
@@ -506,6 +520,7 @@ class Algebraizer:
         return expr
 
     def algebraize_relational(self, rel: Relational) -> Relational:
+        """Lift a relation without discarding the original inequality orientation or source guards."""
         lhs = self.algebraize_expr(rel.lhs)
         rhs = self.algebraize_expr(rel.rhs)
         if isinstance(rel, Equality):
@@ -540,8 +555,8 @@ class Algebraizer:
 
     def _root_domain_rels(
         self, base_poly: sp.Expr, denominator: int
-    ) -> List[Relational]:
-        rels: List[Relational] = []
+    ) -> list[Relational]:
+        rels: list[Relational] = []
         if denominator % 2 == 0:
             if self.assumption_aware:
                 if base_poly.is_nonnegative is not True:
@@ -593,7 +608,7 @@ class Algebraizer:
         self._root_cache[key] = root_var
         self._register_substitution(original_expr, root_var)
         eq = self._add_eq_zero(root_var**denominator - base_poly)
-        domain_rels: List[Relational] = []
+        domain_rels: list[Relational] = []
         if denominator % 2 == 0:
             domain_rels.append(self._add_ge_zero(root_var))
             for rel in self._root_domain_rels(base_poly, denominator):
@@ -668,7 +683,7 @@ class Algebraizer:
         self._rootof_cache[expr] = aux
         self._register_substitution(expr, aux)
         eq = self._add_eq_zero(poly_expr.subs(z, aux))
-        domain_rels: List[Relational] = []
+        domain_rels: list[Relational] = []
 
         if getattr(expr, "is_real", False):
             interval = isolating_interval(expr)
@@ -720,7 +735,7 @@ class Algebraizer:
         self._register_substitution(expr, aux)
         rebuilt = expr.func(*lifted_args)
         eq = self._add_graph_eq(aux, rebuilt)
-        domain_rels: List[Relational] = []
+        domain_rels: list[Relational] = []
 
         if expr.func is sp.log:
             rel = sp.Gt(lifted_args[0], 0)
@@ -740,14 +755,26 @@ class Algebraizer:
             self._add_graph_rel(rel1)
             self._add_graph_rel(rel2)
             domain_rels.extend([rel1, rel2])
-        if expr.func is sp.tan:
+        if expr.func in (sp.tan, sp.cot, sp.sec, sp.csc):
             arg = lifted_args[0]
             c = self._new_aux()
             s = self._new_aux()
             self._add_graph_eq(c, sp.cos(arg))
             self._add_graph_eq(s, sp.sin(arg))
-            self._add_graph_eq(aux * c, s)
-            ne = sp.Ne(c, 0)
+            self._add_eq_zero(c**2 + s**2 - 1)
+            if expr.func is sp.tan:
+                self._add_graph_eq(aux * c, s)
+                denominator = c
+            elif expr.func is sp.cot:
+                self._add_graph_eq(aux * s, c)
+                denominator = s
+            elif expr.func is sp.sec:
+                self._add_graph_eq(aux * c, 1)
+                denominator = c
+            else:
+                self._add_graph_eq(aux * s, 1)
+                denominator = s
+            ne = sp.Ne(denominator, 0)
             self._add_graph_rel(ne)
             domain_rels.append(ne)
         if expr.func is sp.asin:
@@ -777,26 +804,37 @@ class Algebraizer:
         return aux
 
 
-def _piecewise_expr_cases(expr: sp.Expr) -> List[Tuple[List[Relational], sp.Expr]]:
+def _branch_relations(condition):
+    """Return conjunctive relational branch conditions, or None if unsupported."""
+    condition = sp.sympify(condition)
+    if condition is sp.S.true:
+        return []
+    if isinstance(condition, Relational):
+        return [condition]
+    if isinstance(condition, sp.And) and all(
+        isinstance(term, Relational) for term in condition.args
+    ):
+        return list(condition.args)
+    return None
+
+
+def _piecewise_expr_cases(expr: sp.Expr) -> list[tuple[list[Relational], sp.Expr]]:
+    """Expand Piecewise expressions into mutually exclusive relational cases."""
     if not expr.has(Piecewise):
         return [([], expr)]
+    expr = sp.piecewise_exclusive(expr, deep=True)
     atoms = sorted(expr.atoms(Piecewise), key=sp.sstr)
-    branches: List[Tuple[List[Relational], sp.Expr]] = [([], expr)]
+    branches: list[tuple[list[Relational], sp.Expr]] = [([], expr)]
     for pw in atoms:
-        new_branches: List[Tuple[List[Relational], sp.Expr]] = []
+        new_branches: list[tuple[list[Relational], sp.Expr]] = []
         for assumptions, current_expr in branches:
-            for piece_expr, cond in pw.args:
-                cond = sp.sympify(cond)
-                conds: List[Relational] = []
-                if cond is True or cond is sp.S.true:
-                    conds = []
-                elif isinstance(cond, Relational):
-                    conds = [cond]
-                else:
+            for piece_expr, condition in pw.args:
+                relations = _branch_relations(condition)
+                if relations is None:
                     continue
                 new_branches.append(
                     (
-                        assumptions + conds,
+                        [*assumptions, *relations],
                         sp.simplify(current_expr.xreplace({pw: piece_expr})),
                     )
                 )
@@ -811,17 +849,17 @@ def algebraize_cases(
     allow_transcendentals: bool = True,
     allow_rootof: bool = True,
     variables: Sequence[sp.Symbol] | None = None,
-) -> List[LiftedProblem]:
+) -> list[LiftedProblem]:
     """Return lifted branch cases for objectives or constraints containing branching structure.
 
     Each returned problem carries the branch conditions needed to preserve the
     semantics of ``Piecewise`` and related branch-producing expressions."""
     constraints = list(constraints or [])
     objective_cases = _piecewise_expr_cases(objective)
-    all_cases: List[LiftedProblem] = []
+    all_cases: list[LiftedProblem] = []
     case_no = 0
-    for o_assumptions, o_expr in objective_cases:
-        current = [([], [], o_expr)]
+    for objective_assumptions, objective_expr in objective_cases:
+        current = [(list(objective_assumptions), [], objective_expr)]
         for rel in constraints:
             lhs_cases = _piecewise_expr_cases(rel.lhs)
             rhs_cases = _piecewise_expr_cases(rel.rhs)
@@ -834,7 +872,7 @@ def algebraize_cases(
         for assumptions, cons, obj in current:
             case_no += 1
             engine = Algebraizer(
-                aux_prefix=f"{aux_prefix}_pw{case_no}",
+                aux_prefix=f"{aux_prefix}_branch{case_no}",
                 allow_transcendentals=allow_transcendentals,
                 allow_rootof=allow_rootof,
             )

@@ -1,8 +1,8 @@
 import sympy as sp
 
 from symbopt import build_kkt_system, critical_points
-from symbopt.candidates import solve_exact_candidates, solve_kkt_candidates
 from symbopt.algebraize import algebraize
+from symbopt.candidates import solve_exact_candidates, solve_kkt_candidates
 
 
 def test_constrained_critical_point():

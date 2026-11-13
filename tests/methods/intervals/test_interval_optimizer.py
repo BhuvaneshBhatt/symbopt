@@ -1,6 +1,8 @@
 import math
+
 import sympy as sp
-from symbopt import interval_optimize, infer_box_bounds
+
+from symbopt import infer_box_bounds, interval_optimize
 
 
 def test_infer_box_bounds():
@@ -58,6 +60,7 @@ def test_infer_box_bounds_ignores_one_sided_only():
 def test_interval_rejects_reversed_box():
     import pytest
     import sympy as sp
+
     from symbopt import interval_optimize
 
     x = sp.symbols("x", real=True)
@@ -68,6 +71,7 @@ def test_interval_rejects_reversed_box():
 def test_interval_rejects_missing_variable_bound():
     import pytest
     import sympy as sp
+
     from symbopt import interval_optimize
 
     x, y = sp.symbols("x y", real=True)
@@ -78,6 +82,7 @@ def test_interval_rejects_missing_variable_bound():
 def test_interval_rejects_invalid_search_controls():
     import pytest
     import sympy as sp
+
     from symbopt import interval_optimize
 
     x = sp.symbols("x", real=True)

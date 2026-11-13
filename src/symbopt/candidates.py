@@ -1,23 +1,24 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import combinations
-from typing import List, Optional, Sequence, Tuple
 
 import sympy as sp
 
 from .algebraic_numbers import algebraic_compare
 from .diagnostics import DiagnosticKind, SolverDiagnostic
 from .kkt import build_kkt_system
+from .numeric_utils import eval_float, real_part
+from .precision import finite_midpoint
 from .problem_models import CandidateSolution, KKTSystem, LiftedProblem
-from .numeric_utils import is_numerically_real, real_part
 from .relation_checks import relation_holds
 from .semialgebraic import solve_exact_points
 from .verified_intervals import EvalConfig, enclose_expression
 
 
 def _note(
-    diagnostics: Optional[List[SolverDiagnostic]],
+    diagnostics: list[SolverDiagnostic] | None,
     solver: str,
     stage: str,
     kind: DiagnosticKind,
@@ -78,7 +79,7 @@ def _activity_profile(
 class ActiveSetPlan:
     """Shared prioritized KKT active-set enumeration plan."""
 
-    patterns: Tuple[Tuple[int, ...], ...]
+    patterns: tuple[tuple[int, ...], ...]
     complete: bool
     infeasible: bool = False
 
@@ -92,6 +93,7 @@ def build_active_set_plan(
     equalities=(),
     diagnostics=None,
 ) -> ActiveSetPlan:
+    """Enumerate prioritized KKT active sets and report whether the plan is exhaustive."""
     count = len(inequalities)
     if count == 0:
         return ActiveSetPlan(((),), True, False)
@@ -308,7 +310,7 @@ def _seed_values(kkt: KKTSystem, box_bounds, mode: str):
         if box_bounds and variable in box_bounds:
             low, high = box_bounds[variable]
             if mode == "mid":
-                seed.append(0.5 * (low + high))
+                seed.append(finite_midpoint(low, high))
             elif mode == "low":
                 seed.append(low + 0.2 * (high - low))
             else:
@@ -384,15 +386,15 @@ def _filter_candidate(
         if variable not in raw_values:
             continue
         value = raw_values[variable]
+        try:
+            eval_float(value, digits)
+        except (TypeError, ValueError, ArithmeticError, NotImplementedError):
+            return None
         if getattr(value, "is_number", False) and not value.has(sp.Float):
             primal[variable] = sp.simplify(value)
         else:
             primal[variable] = sp.nsimplify(sp.re(sp.N(value, digits)))
     if len(primal) != len(kkt.primal_variables):
-        return None
-    if any(
-        not is_numerically_real(primal[variable], digits=digits) for variable in primal
-    ):
         return None
     if any(
         not relation_holds(relation, primal, tol)
@@ -411,11 +413,15 @@ def _filter_candidate(
     classification = _classify_candidate(kkt, {**raw_values, **primal}, tol)
     projected = _original_values(problem, primal)
     objective = sp.simplify(problem.lifted_objective.subs(primal))
+    try:
+        numeric_value = eval_float(objective, digits)
+    except (TypeError, ValueError, ArithmeticError, NotImplementedError):
+        return None
     return CandidateSolution(
         primal_values=primal,
         multiplier_values=multipliers,
         objective_value=objective,
-        objective_value_numeric=real_part(objective, digits),
+        objective_value_numeric=numeric_value,
         feasibility_checked=True,
         source=source,
         local_classification=classification,
@@ -430,9 +436,9 @@ def solve_exact_candidates(
     tol: float = 1e-7,
     max_active_sets: int = 64,
     cp_results=None,
-    diagnostics: Optional[List[SolverDiagnostic]] = None,
+    diagnostics: list[SolverDiagnostic] | None = None,
     active_set_plan: ActiveSetPlan | None = None,
-    exact_search_metadata: Optional[dict] = None,
+    exact_search_metadata: dict | None = None,
 ):
     """Extract polynomial/KKT candidates using symbolic solving and elimination before numerical fallback.
 
@@ -568,7 +574,7 @@ def solve_kkt_candidates(
     tol: float = 1e-7,
     max_active_sets: int = 64,
     cp_results=None,
-    diagnostics: Optional[List[SolverDiagnostic]] = None,
+    diagnostics: list[SolverDiagnostic] | None = None,
     active_set_plan: ActiveSetPlan | None = None,
     working_precision: int | None = None,
 ):
@@ -580,7 +586,7 @@ def solve_kkt_candidates(
     stationarity, equalities, inequalities, unknowns = _collect_kkt_data(kkt)
     candidates = []
     seen = set()
-    temp_unknowns = [sp.Symbol(f"_t{index}") for index in range(len(unknowns))]
+    temp_unknowns = [sp.Dummy(f"t{index}") for index in range(len(unknowns))]
     substitutions = dict(zip(unknowns, temp_unknowns))
     plan = active_set_plan or build_active_set_plan(
         inequalities,
@@ -599,7 +605,7 @@ def solve_kkt_candidates(
             equations.append(
                 inequalities[index] if active else kkt.inequality_multipliers[index]
             )
-        temp_equations = [sp.expand(eq.subs(substitutions)) for eq in equations]
+        temp_equations = [sp.expand(eq.xreplace(substitutions)) for eq in equations]
 
         for mode in ("mid", "low", "high"):
             seed = _seed_values(kkt, box_bounds, mode)
@@ -649,23 +655,40 @@ def solve_kkt_candidates(
 
 
 def dedupe_candidates(candidates):
+    """Merge numerically coincident candidate proposals and sort them by objective value."""
     unique = {}
     for candidate in candidates:
-        key = tuple(
-            (
-                variable,
-                round(candidate.objective_value_numeric, 12),
-                round(real_part(candidate.primal_values[variable]), 10),
+        ordered = sorted(candidate.primal_values, key=sp.sstr)
+        if candidate.objective_value_numeric is None or any(
+            getattr(value, "free_symbols", ())
+            for value in candidate.primal_values.values()
+        ):
+            key = (
+                candidate.objective_value,
+                tuple((v, candidate.primal_values[v]) for v in ordered),
             )
-            for variable in sorted(candidate.primal_values, key=sp.sstr)
-        )
+        else:
+            key = tuple(
+                (
+                    v,
+                    round(candidate.objective_value_numeric, 12),
+                    round(real_part(candidate.primal_values[v]), 10),
+                )
+                for v in ordered
+            )
         unique[key] = candidate
     return sorted(
-        unique.values(), key=lambda candidate: candidate.objective_value_numeric
+        unique.values(),
+        key=lambda candidate: (
+            float("inf")
+            if candidate.objective_value_numeric is None
+            else candidate.objective_value_numeric
+        ),
     )
 
 
 def select_best_candidate(candidates):
+    """Choose the least objective candidate using exact comparison when available."""
     if not candidates:
         return None
     best = candidates[0]
@@ -674,10 +697,10 @@ def select_best_candidate(candidates):
             candidate.objective_value,
             best.objective_value,
         )
-        if comparison is not None and comparison < 0:
-            best = candidate
-        elif (
+        if (comparison is not None and comparison < 0) or (
             comparison is None
+            and candidate.objective_value_numeric is not None
+            and best.objective_value_numeric is not None
             and candidate.objective_value_numeric < best.objective_value_numeric
         ):
             best = candidate
