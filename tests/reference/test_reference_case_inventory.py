@@ -13,6 +13,10 @@ ROOT = Path(__file__).with_name("corpus")
 CASES = load_cases()
 
 
+def _corpus_digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
 def test_reference_inventory_complete():
     manifest = json.loads((ROOT / "manifest.json").read_text())
     identities = [case["case_id"] for case in CASES]
@@ -22,8 +26,23 @@ def test_reference_inventory_complete():
         ("\n".join(sorted(identities)) + "\n").encode()
     ).hexdigest()
     assert signature == manifest["case_ids_sha256"]
-    corpus_digest = hashlib.sha256((ROOT / "cases.json").read_bytes()).hexdigest()
+    corpus_digest = _corpus_digest(ROOT / "cases.json")
     assert corpus_digest == manifest["cases_sha256"]
+
+
+def test_corpus_digest_normalizes_crlf(tmp_path):
+    path = tmp_path / "cases.json"
+    contents = b'{"objective":"x^2"}\n'
+    expected = hashlib.sha256(contents).hexdigest()
+
+    path.write_bytes(contents)
+    assert _corpus_digest(path) == expected
+
+    path.write_bytes(contents.replace(b"\n", b"\r\n"))
+    assert _corpus_digest(path) == expected
+
+    path.write_bytes(b'{"objective":"x^3"}\r\n')
+    assert _corpus_digest(path) != expected
 
 
 def test_reference_expressions_reconstruct():
