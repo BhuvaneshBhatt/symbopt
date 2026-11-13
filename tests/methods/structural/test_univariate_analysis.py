@@ -123,8 +123,6 @@ def test_real_domain_fallback_without_funcprops(monkeypatch):
         assert univariate._needs_real_locus(complex_logs)
         assert univariate._needs_real_locus(sp.log(x) ** 2)
         assert univariate._needs_real_locus(sp.Abs(sp.log(x)))
-        assert univariate._needs_real_locus(
-            sp.log(x) + sp.log(-x) - sp.log(-(x**2))
-        )
+        assert univariate._needs_real_locus(sp.log(x) + sp.log(-x) - sp.log(-(x**2)))
     finally:
         clear_univariate_analysis_cache()

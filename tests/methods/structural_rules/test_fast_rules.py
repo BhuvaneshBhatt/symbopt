@@ -424,13 +424,19 @@ def test_absolute_value_constraints_define_exact_box():
 
     assert RuleContext(x**2, (sp.Ge(sp.Abs(x), 2),), (x,)).rectangle is None
     complex_symbol = sp.Symbol("z")
-    assert RuleContext(
-        complex_symbol**4,
-        (sp.Le(sp.Abs(complex_symbol), 1),),
-        (complex_symbol,),
-    ).rectangle is None
-    assert RuleContext(
-        x**4 - y**4,
-        (sp.Le(sp.Abs(x), 2), sp.Eq(x + y, 1)),
-        (x, y),
-    ).rectangle is None
+    assert (
+        RuleContext(
+            complex_symbol**4,
+            (sp.Le(sp.Abs(complex_symbol), 1),),
+            (complex_symbol,),
+        ).rectangle
+        is None
+    )
+    assert (
+        RuleContext(
+            x**4 - y**4,
+            (sp.Le(sp.Abs(x), 2), sp.Eq(x + y, 1)),
+            (x, y),
+        ).rectangle
+        is None
+    )
