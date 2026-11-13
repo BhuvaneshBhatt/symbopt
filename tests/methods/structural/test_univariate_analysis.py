@@ -102,3 +102,29 @@ def test_funcprops_real_loci():
     assert certified_monotone_direction(sp.exp(x), x, sp.S.Reals) is True
     assert certified_monotone_direction(-sp.exp(x), x, sp.S.Reals) is False
     assert certified_monotone_direction(x**2, x, sp.S.Reals) is None
+
+
+def test_real_domain_fallback_without_funcprops(monkeypatch):
+    import symbopt.univariate_analysis as univariate
+
+    x = sp.Symbol("x", real=True)
+    monkeypatch.setattr(univariate, "_funcprops_module", lambda: None)
+    clear_univariate_analysis_cache()
+    try:
+        analysis = analyze_univariate(x - sp.log(x), (x > 0,), x)
+        assert analysis.feasible_domain == sp.Interval.open(0, sp.oo)
+        assert analysis.stationary_points == (sp.Integer(1),)
+
+        radical = analyze_univariate(-sp.sqrt(x), (), x)
+        assert radical.feasible_domain == sp.Interval(0, sp.oo)
+        assert radical.range_set == sp.Interval(-sp.oo, 0)
+
+        complex_logs = sp.log(x + sp.I) + sp.log(x - sp.I)
+        assert univariate._needs_real_locus(complex_logs)
+        assert univariate._needs_real_locus(sp.log(x) ** 2)
+        assert univariate._needs_real_locus(sp.Abs(sp.log(x)))
+        assert univariate._needs_real_locus(
+            sp.log(x) + sp.log(-x) - sp.log(-(x**2))
+        )
+    finally:
+        clear_univariate_analysis_cache()

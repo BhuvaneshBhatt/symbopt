@@ -403,3 +403,34 @@ def test_nonsmooth_kkt_requires_subgradients():
     )
     assert certificate.value == sp.Rational(5, 2)
     assert certificate.points == ({x: -1},)
+
+
+def test_absolute_value_constraints_define_exact_box():
+    from symbopt.rule_utils import RuleContext
+
+    x, y = sp.symbols("x y", real=True)
+    context = RuleContext(
+        x**4 - y**4,
+        (sp.Le(sp.Abs(x), 2), sp.Lt(sp.Abs(y), 1)),
+        (x, y),
+    )
+    rectangle = context.rectangle
+    assert rectangle[x].left == -2
+    assert rectangle[x].right == 2
+    assert not rectangle[x].left_open and not rectangle[x].right_open
+    assert rectangle[y].left == -1
+    assert rectangle[y].right == 1
+    assert rectangle[y].left_open and rectangle[y].right_open
+
+    assert RuleContext(x**2, (sp.Ge(sp.Abs(x), 2),), (x,)).rectangle is None
+    complex_symbol = sp.Symbol("z")
+    assert RuleContext(
+        complex_symbol**4,
+        (sp.Le(sp.Abs(complex_symbol), 1),),
+        (complex_symbol,),
+    ).rectangle is None
+    assert RuleContext(
+        x**4 - y**4,
+        (sp.Le(sp.Abs(x), 2), sp.Eq(x + y, 1)),
+        (x, y),
+    ).rectangle is None

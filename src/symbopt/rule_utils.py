@@ -144,7 +144,29 @@ class RuleContext:
         """Recognize a nonempty Cartesian interval domain, including strict bounds."""
         bounds = {v: [-sp.oo, sp.oo, True, True] for v in self.variables}
         exclusions = []
+        # |x| <= b (or < b) is exactly the pair -b <= x <= b for
+        # real x and a finite, nonnegative constant b.
+        relations = []
         for relation in self.constraints:
+            if (
+                isinstance(relation, (sp.LessThan, sp.StrictLessThan))
+                and relation.lhs.func is sp.Abs
+                and relation.lhs.args[0] in self.variables
+                and relation.lhs.args[0].is_real is True
+                and relation.rhs.is_number is True
+                and relation.rhs.is_finite is True
+                and relation.rhs.is_nonnegative is True
+            ):
+                variable = relation.lhs.args[0]
+                relations.extend(
+                    (
+                        relation.func(-relation.rhs, variable),
+                        relation.func(variable, relation.rhs),
+                    )
+                )
+            else:
+                relations.append(relation)
+        for relation in relations:
             if isinstance(relation, sp.Unequality):
                 exclusions.append(relation.lhs - relation.rhs)
                 continue

@@ -211,31 +211,42 @@ def certified_monotone_direction(expr, variable, domain):
 
 
 def _needs_real_locus(expression):
-    """Detect compositions for which real-operand domains can omit real outputs.
+    """Avoid narrowing the domain of expressions with complex intermediates."""
+    if expression.has(sp.I):
+        return True
 
-    SymPy's continuous-domain routine restricts intermediate logarithms and
-    powers to real values. A complex operand can still produce a real output,
-    so that restriction is not an exhaustive domain description here.
-    """
-    heads = {
-        sp.Add,
-        sp.Mul,
-        sp.Pow,
-        sp.exp,
-        sp.sin,
-        sp.cos,
-        sp.sinh,
-        sp.cosh,
-        sp.Abs,
-        sp.re,
-        sp.im,
-        sp.conjugate,
-    }
-    return any(
-        node.func in heads and any(arg.is_real is not True for arg in node.args)
-        for node in sp.preorder_traversal(expression)
-        if isinstance(node, sp.Expr)
-    )
+    def real_domain_primitives(node):
+        # Only a real linear combination of at most one potentially complex
+        # log or even-denominator root is safe to restrict by real operands.
+        projections = {sp.Abs, sp.re, sp.im, sp.conjugate}
+        if node.func in projections and any(
+            arg.is_real is not True for arg in node.args
+        ):
+            return None
+        if node.is_real is True:
+            return 0
+        if node.is_Add:
+            parts = [real_domain_primitives(arg) for arg in node.args]
+            return sum(parts) if all(part is not None for part in parts) else None
+        if node.is_Mul:
+            coefficient, dependent = node.as_coeff_Mul()
+            if coefficient.is_real is True and coefficient != 1 and dependent != node:
+                return real_domain_primitives(dependent)
+            return None
+        if node.func is sp.log and node.args[0].is_real is True:
+            return 1
+        if (
+            node.is_Pow
+            and node.exp.is_Rational
+            and node.exp > 0
+            and node.exp.q % 2 == 0
+            and node.base.is_real is True
+        ):
+            return 1
+        return None
+
+    count = real_domain_primitives(expression)
+    return count is None or count > 1
 
 
 @dataclass(frozen=True)

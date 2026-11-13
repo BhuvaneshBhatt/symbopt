@@ -99,3 +99,29 @@ def test_complex_log_arguments():
     expression = sp.log(x + sp.I) + sp.log(x - sp.I)
     assert sp.simplify(expression.subs(x, 0)) == 0
     assert find_monotone_reduction(expression, (), (x,)) is None
+
+
+def test_exponential_quartic_on_absolute_box():
+    x, y = sp.symbols("x y", real=True)
+    result = minimize_result(
+        sp.exp(x**4 - y**4),
+        [sp.Le(sp.Abs(x), 1), sp.Le(sp.Abs(y), 1)],
+        variables=(x, y),
+        use_sos=False,
+    )
+    assert result.certified is True
+    assert result.optimum_value == sp.exp(-1)
+    assert result.attained is True
+    assert result.best_candidate is not None
+    point = result.best_candidate.original_variable_values
+    assert point[x] == 0 and point[y] ** 4 == 1
+    assert _has_monotone_artifact(result)
+
+
+def test_unbounded_negative_square_root_is_certified():
+    x = sp.Symbol("x", real=True)
+    result = minimize_result(-sp.sqrt(x), variables=(x,), use_sos=False)
+    assert result.certified is True
+    assert result.unbounded is True
+    assert result.optimum_value is -sp.oo
+    assert result.attained is False
